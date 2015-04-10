@@ -11,8 +11,8 @@
 
 */
 
-#ifndef __JUCE_APPCONFIG_HW8E3E__
-#define __JUCE_APPCONFIG_HW8E3E__
+#ifndef __JUCE_APPCONFIG_DHERLX__
+#define __JUCE_APPCONFIG_DHERLX__
 
 //==============================================================================
 // [BEGIN_USER_CODE_SECTION]
@@ -219,7 +219,7 @@
  #define JucePlugin_Desc                   "fooHarmonizer"
 #endif
 #ifndef  JucePlugin_Manufacturer
- #define JucePlugin_Manufacturer           "ryanfoo"
+ #define JucePlugin_Manufacturer           "fooplugins"
 #endif
 #ifndef  JucePlugin_ManufacturerWebsite
  #define JucePlugin_ManufacturerWebsite    ""
@@ -288,7 +288,7 @@
  #define JucePlugin_AUManufacturerCode     JucePlugin_ManufacturerCode
 #endif
 #ifndef  JucePlugin_CFBundleIdentifier
- #define JucePlugin_CFBundleIdentifier     com.ryanfoo.fooHarmonizer
+ #define JucePlugin_CFBundleIdentifier     com.fooplugins.fooHarmonizer
 #endif
 #ifndef  JucePlugin_RTASCategory
  #define JucePlugin_RTASCategory           ePlugInCategory_None
@@ -306,7 +306,7 @@
  #define JucePlugin_RTASDisableMultiMono   0
 #endif
 #ifndef  JucePlugin_AAXIdentifier
- #define JucePlugin_AAXIdentifier          com.ryanfoo.fooHarmonizer
+ #define JucePlugin_AAXIdentifier          com.fooplugins.fooHarmonizer
 #endif
 #ifndef  JucePlugin_AAXManufacturerCode
  #define JucePlugin_AAXManufacturerCode    JucePlugin_ManufacturerCode
@@ -324,4 +324,4 @@
  #define JucePlugin_AAXDisableMultiMono    0
 #endif
 
-#endif  // __JUCE_APPCONFIG_HW8E3E__
+#endif  // __JUCE_APPCONFIG_DHERLX__

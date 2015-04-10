@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CB1FE0559B47B91C74DE430D"
+               BlueprintIdentifier = "5CB8710E4051FCD603EDB037"
                BuildableName = "fooHarmonizer.component"
                BlueprintName = "fooHarmonizer"
                ReferencedContainer = "container:fooHarmonizer.xcodeproj">
@@ -42,7 +42,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CB1FE0559B47B91C74DE430D"
+            BlueprintIdentifier = "5CB8710E4051FCD603EDB037"
             BuildableName = "fooHarmonizer.component"
             BlueprintName = "fooHarmonizer"
             ReferencedContainer = "container:fooHarmonizer.xcodeproj">
@@ -60,7 +60,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CB1FE0559B47B91C74DE430D"
+            BlueprintIdentifier = "5CB8710E4051FCD603EDB037"
             BuildableName = "fooHarmonizer.component"
             BlueprintName = "fooHarmonizer"
             ReferencedContainer = "container:fooHarmonizer.xcodeproj">

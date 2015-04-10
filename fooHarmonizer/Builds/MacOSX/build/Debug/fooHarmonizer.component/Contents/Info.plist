@@ -12,7 +12,7 @@
 			<key>manufacturer</key>
 			<string>Manu</string>
 			<key>name</key>
-			<string>ryanfoo: fooHarmonizer</string>
+			<string>fooplugins: fooHarmonizer</string>
 			<key>subtype</key>
 			<string>Plug</string>
 			<key>type</key>
@@ -26,7 +26,7 @@
 	<key>CFBundleExecutable</key>
 	<string>fooHarmonizer</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.ryanfoo.fooHarmonizer</string>
+	<string>com.fooplugins.fooHarmonizer</string>
 	<key>CFBundleName</key>
 	<string>fooHarmonizer</string>
 	<key>CFBundlePackageType</key>
@@ -54,6 +54,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Ryan Foo</string>
+	<string>Foo Plugins</string>
 </dict>
 </plist>

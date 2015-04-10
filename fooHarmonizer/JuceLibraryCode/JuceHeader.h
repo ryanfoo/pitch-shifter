@@ -10,8 +10,8 @@
 
 */
 
-#ifndef __APPHEADERFILE_HW8E3E__
-#define __APPHEADERFILE_HW8E3E__
+#ifndef __APPHEADERFILE_DHERLX__
+#define __APPHEADERFILE_DHERLX__
 
 #include "AppConfig.h"
 #include "modules/juce_audio_basics/juce_audio_basics.h"
@@ -44,4 +44,4 @@ namespace ProjectInfo
 }
 #endif
 
-#endif   // __APPHEADERFILE_HW8E3E__
+#endif   // __APPHEADERFILE_DHERLX__

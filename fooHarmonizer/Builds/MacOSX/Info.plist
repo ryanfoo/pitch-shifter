@@ -8,7 +8,7 @@
     <key>CFBundleIconFile</key>
     <string></string>
     <key>CFBundleIdentifier</key>
-    <string>com.ryanfoo.fooHarmonizer</string>
+    <string>com.fooplugins.fooHarmonizer</string>
     <key>CFBundleName</key>
     <string>fooHarmonizer</string>
     <key>CFBundlePackageType</key>
@@ -20,14 +20,14 @@
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Ryan Foo</string>
+    <string>Foo Plugins</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>AudioComponents</key>
     <array>
       <dict>
         <key>name</key>
-        <string>ryanfoo: fooHarmonizer</string>
+        <string>fooplugins: fooHarmonizer</string>
         <key>description</key>
         <string>fooHarmonizer</string>
         <key>factoryFunction</key>
