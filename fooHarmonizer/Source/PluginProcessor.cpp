@@ -147,13 +147,22 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    for (int channel = 0; channel < getNumInputChannels(); ++channel)
+    // Process Audio
+    if (getNumInputChannels() == 1)
     {
-        float* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
+        // Obtain channel 1 data
+        float *monoChannel = buffer.getWritePointer(0);
+        
+        // process Mono Data (monoChannel, buffer.getNumSamples)
+        shifter.processMono(monoChannel, buffer.getNumChannels());
+    }
+    else if (getNumInputChannels() == 2)
+    {
+        // Obtain channel 1 and 2 data
+        float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
+        
+        // process stereo (leftChannel, rightChannel, buffer.getNumSamples()
+        shifter.processStereo(leftChannel, rightChannel, buffer.getNumChannels());
     }
 }
 

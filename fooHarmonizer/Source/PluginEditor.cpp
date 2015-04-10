@@ -51,7 +51,7 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     setSize (500, 500);
     
     // Create Sliders
-    createSlider(mixSlider, Slider::Rotary, 100, 0, 100, 1, "Blend");
+    createSlider(mixSlider, Slider::Rotary, 1.0f, 0, 1.0f, 0.01f, "Blend");
     createSlider(pitchSlider, Slider::Rotary, 7, -12, 12, 1, "Semitone");
     createSlider(lowpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Lowpass Filter");
     createSlider(highpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Highpass Filter");
