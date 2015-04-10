@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="hW8E3e" name="fooHarmonizer" projectType="audioplug" version="1.0.0"
+              bundleIdentifier="com.ryanfoo.fooHarmonizer" includeBinaryInAppConfig="1"
+              buildVST="1" buildVST3="1" buildAU="1" buildRTAS="0" buildAAX="0"
+              pluginName="fooHarmonizer" pluginDesc="fooHarmonizer" pluginManufacturer="ryanfoo"
+              pluginManufacturerCode="Manu" pluginCode="Plug" pluginChannelConfigs="{1, 1}, {2, 2}"
+              pluginIsSynth="0" pluginWantsMidiIn="0" pluginProducesMidiOut="0"
+              pluginSilenceInIsSilenceOut="0" pluginEditorRequiresKeys="0"
+              pluginAUExportPrefix="fooHarmonizerAU" pluginRTASCategory=""
+              aaxIdentifier="com.ryanfoo.fooHarmonizer" pluginAAXCategory="AAX_ePlugInCategory_Dynamics"
+              jucerVersion="3.1.0" companyName="Ryan Foo">
+  <MAINGROUP id="NOJhSX" name="fooHarmonizer">
+    <GROUP id="{967021B0-827A-8C2C-65AF-5CBA133F954B}" name="Source">
+      <FILE id="z2qvfg" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="uSHkdI" name="PluginProcessor.h" compile="0" resource="0"
+            file="Source/PluginProcessor.h"/>
+      <FILE id="lM2NbJ" name="PluginEditor.cpp" compile="1" resource="0"
+            file="Source/PluginEditor.cpp"/>
+      <FILE id="IlP7pS" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <EXPORTFORMATS>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="1" optimisation="1" targetName="fooHarmonizer"/>
+        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="0" optimisation="2" targetName="fooHarmonizer"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_video" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_opengl" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../../../Desktop/JUCE-OSX/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="../../../../Desktop/JUCE-OSX/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+  <MODULES>
+    <MODULES id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_devices" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_formats" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_processors" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_core" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_cryptography" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_events" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_graphics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_gui_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_gui_extra" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_opengl" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_video" showAllCode="1" useLocalCopy="0"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_QUICKTIME="disabled"/>
+</JUCERPROJECT>
