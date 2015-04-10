@@ -50,10 +50,16 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     // editor's size to whatever you need it to be.
     setSize (500, 500);
     
+    // Create Sliders
     createSlider(mixSlider, Slider::Rotary, 100, 0, 100, 1, "Blend");
     createSlider(pitchSlider, Slider::Rotary, 7, -12, 12, 1, "Semitone");
     createSlider(lowpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Lowpass Filter");
     createSlider(highpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Highpass Filter");
+    // Create Labels
+    createLabel(mixText, "Blend");
+    createLabel(pitchText, "Semitone");
+    createLabel(lowpassText, "LP Filter");
+    createLabel(highpassText, "HP Filter");
 }
 
 FooHarmonizerAudioProcessorEditor::~FooHarmonizerAudioProcessorEditor()
@@ -82,10 +88,17 @@ void FooHarmonizerAudioProcessorEditor::resized()
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
     
+    // Set bounds for sliders
     mixSlider.setBounds(100, 125, 50, 50);
     pitchSlider.setBounds(350, 125, 50, 50);
     lowpassSlider.setBounds(100, 375, 50, 50);
     highpassSlider.setBounds(350, 375, 50, 50);
+    
+    // Set bounds for texts
+    mixText.setBounds(100, 180, 10, 10);
+    pitchText.setBounds(350, 180, 10, 10);
+    lowpassText.setBounds(100, 430, 50, 10);
+    highpassText.setBounds(350, 430, 50, 10);
 }
 
 // Callback from listener
