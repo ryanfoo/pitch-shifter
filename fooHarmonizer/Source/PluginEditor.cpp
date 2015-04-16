@@ -51,12 +51,12 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     setSize (500, 500);
     
     // Create Sliders
-    createSlider(mixSlider, Slider::Rotary, 1.0f, 0, 1.0f, 0.01f, "Blend");
-    createSlider(pitchSlider, Slider::Rotary, 7, -12, 12, 1, "Semitone");
-    createSlider(lowpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Lowpass Filter");
-    createSlider(highpassSlider, Slider::Rotary, 0, 0, 20000, 10, "Highpass Filter");
+    createSlider(mixSlider, Slider::Rotary, processor.mixVal, 0, 1.0f, 0.01f, "Mix");
+    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, -12, 12, 1, "Semitone");
+    createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0, 20000, 10, "Lowpass Filter");
+    createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0, 20000, 10, "Highpass Filter");
     // Create Labels
-    createLabel(mixText, "Blend");
+    createLabel(mixText, "Mix");
     createLabel(pitchText, "Semitone");
     createLabel(lowpassText, "LP Filter");
     createLabel(highpassText, "HP Filter");
@@ -104,5 +104,18 @@ void FooHarmonizerAudioProcessorEditor::resized()
 // Callback from listener
 void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
+    if (slider->getComponentID().compare("Mix") == 0) {
+        processor.mixVal = slider->getValue();
+    }
+    else if (slider->getComponentID().compare("Semitone") == 0) {
+        processor.pitchVal = slider->getValue();
+    }
+    else if (slider->getComponentID().compare("Lowpass Filter") == 0) {
+        processor.lpVal = slider->getValue();
+    }
+    else if (slider->getComponentID().compare("Highpass Filter") == 0) {
+        processor.hpVal = slider->getValue();
+    }
     
+    processor.updateShifter();
 }

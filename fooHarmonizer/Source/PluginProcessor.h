@@ -65,6 +65,11 @@ public:
     //==============================================================================
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    
+    // Variables
+    float mixVal, pitchVal, lpVal, hpVal;
+    // GUI Update
+    void updateShifter(void);
 
 private:
     Shifter shifter;

@@ -123,6 +123,19 @@ void FooHarmonizerAudioProcessor::changeProgramName (int index, const String& ne
 {
 }
 
+// Updates the Pitch Shifter's Parameters every time a knob is turned
+void FooHarmonizerAudioProcessor::updateShifter(void)
+{
+    Shifter::Parameters shifterParams = shifter.getParameters();
+    
+    shifterParams.pitch = pitchVal;
+    shifterParams.mix = mixVal;
+    shifterParams.lpf = lpVal;
+    shifterParams.hpf = hpVal;
+    
+    shifter.setParameters(shifterParams);
+}
+
 //==============================================================================
 void FooHarmonizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
