@@ -108,7 +108,7 @@ void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
         processor.mixVal = slider->getValue();
     }
     else if (slider->getComponentID().compare("Semitone") == 0) {
-        processor.pitchVal = slider->getValue();
+        processor.pitchVal = slider->getValue(); 
     }
     else if (slider->getComponentID().compare("Lowpass Filter") == 0) {
         processor.lpVal = slider->getValue();

@@ -14,6 +14,8 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
+#define WINDOW_SIZE     2048
+#define HOP_SIZE        512
 
 class Shifter
 {
@@ -30,7 +32,7 @@ public:
         : pitch(6),
         lpf(0),
         hpf(0),
-        mix(1.0f)
+        mix(0.50f)
         {}
         
         int pitch;
@@ -63,6 +65,13 @@ public:
     
     // Process Right Channel
     float processSampleR(float inSample);
+    
+    float window[WINDOW_SIZE], prev_win[WINDOW_SIZE], cur_win[WINDOW_SIZE],
+          omega[WINDOW_SIZE/2], phi0[WINDOW_SIZE/2], synMag[WINDOW_SIZE],
+          synFreq[WINDOW_SIZE], sumPhase[WINDOW_SIZE/2], anaFreq[WINDOW_SIZE],
+          cur_magnitude[WINDOW_SIZE/2], cur_phase[WINDOW_SIZE/2],
+          overlap;
+    int overlap_samples, osamp;
     
 protected:
     
