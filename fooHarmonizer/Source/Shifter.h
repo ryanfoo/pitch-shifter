@@ -11,7 +11,7 @@
 
 // #include <stdio.h>
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "fft.h"
+// #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
 #define WINDOW_SIZE     2048
@@ -68,14 +68,18 @@ public:
     
     float window[WINDOW_SIZE], prev_win[WINDOW_SIZE], cur_win[WINDOW_SIZE],
           omega[WINDOW_SIZE/2], phi0[WINDOW_SIZE/2], synMag[WINDOW_SIZE],
-          synFreq[WINDOW_SIZE], sumPhase[WINDOW_SIZE/2], anaFreq[WINDOW_SIZE],
+          synFreq[WINDOW_SIZE], sumPhase[WINDOW_SIZE/2], anaMagn[WINDOW_SIZE], anaFreq[WINDOW_SIZE],
           cur_magnitude[WINDOW_SIZE/2], cur_phase[WINDOW_SIZE/2],
-          overlap;
-    int overlap_samples, osamp;
+          overlap, freqPerBin, fftData[WINDOW_SIZE],
+          inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE], win, re, im, magn, phs, prev_phs[WINDOW_SIZE/2+1],
+          outData[WINDOW_SIZE*2];
+    int overlap_samples, osamp, gRover, inFifoLatency;
     
 protected:
     
 private:
+    // STFT
+    void stft(float* buf, float frameSize, float sign);
     // Pitch shifter's parameters
     Parameters parameters;
     // Pitch shifter's sample rate
