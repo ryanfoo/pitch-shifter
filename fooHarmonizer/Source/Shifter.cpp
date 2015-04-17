@@ -96,7 +96,11 @@ void Shifter::stft(float* buf, float frameSize, float sign)
 void Shifter::processMono(float* const samples, const int numSamples) noexcept
 {
     jassert (samples != nullptr);
-
+   
+    osamp = WINDOW_SIZE/HOP_SIZE;
+    freqPerBin = currentSampleRate / WINDOW_SIZE;
+    stepSize = WINDOW_SIZE/osamp;
+    inFifoLatency = WINDOW_SIZE - stepSize;
     // Loop through sample buffer (STFT)
     for (int i = 0; i < numSamples; i++)
     {
@@ -111,6 +115,10 @@ void Shifter::processStereo(float* const left, float* const right, const int num
 {
     jassert (left != nullptr && right != nullptr);
     
+    osamp = WINDOW_SIZE/HOP_SIZE;
+    freqPerBin = currentSampleRate / WINDOW_SIZE;
+    stepSize = WINDOW_SIZE/osamp;
+    inFifoLatency = WINDOW_SIZE - stepSize;
     // Loop through sample buffers (STFT)
     for (int i = 0; i < numSamples; i++)
     {
@@ -209,12 +217,9 @@ inline float Shifter::processSampleL(float inSample)
             outData[i] += (float)(2. * win * fftData[i*2] / (WINDOW_SIZE*osamp));
         }
         
-        for (i = 0; i < WINDOW_SIZE; i++)
-        {
-            outData[i] = outData[i+HOP_SIZE];
-        }
-        
-        for (i = 0; i < inFifoLatency; i++) inFIFO[i] = inFIFO[i+HOP_SIZE];
+        for (i = 0; i < stepSize; i++) outFIFO[i] = outData[i];
+        for (i = 0; i < WINDOW_SIZE; i++) outData[i] = outData[i+stepSize];
+        for (i = 0; i < inFifoLatency; i++) inFIFO[i] = inFIFO[i+stepSize];
     }
     
     return inSample*(1.0-parameters.mix) + y * parameters.mix;
@@ -310,11 +315,8 @@ inline float Shifter::processSampleR(float inSample)
             outData[i] += (float)(2. * win * fftData[i*2] / (WINDOW_SIZE*osamp));
         }
         
-        for (i = 0; i < WINDOW_SIZE; i++)
-        {
-            outData[i] = outData[i+HOP_SIZE];
-        }
-        
+        for (i = 0; i < HOP_SIZE; i++) outFIFO[i] = outData[i];
+        for (i = 0; i < WINDOW_SIZE; i++) outData[i] = outData[i+HOP_SIZE];
         for (i = 0; i < inFifoLatency; i++) inFIFO[i] = inFIFO[i+HOP_SIZE];
     }
 

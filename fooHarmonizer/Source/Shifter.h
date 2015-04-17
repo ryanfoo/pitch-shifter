@@ -14,8 +14,8 @@
 // #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE     2048
-#define HOP_SIZE        512
+#define WINDOW_SIZE             2048
+#define HOP_SIZE                512
 
 class Shifter
 {
@@ -73,7 +73,7 @@ public:
           overlap, freqPerBin, fftData[WINDOW_SIZE],
           inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE], win, re, im, magn, phs, prev_phs[WINDOW_SIZE/2+1],
           outData[WINDOW_SIZE*2];
-    int overlap_samples, osamp, gRover, inFifoLatency;
+    int overlap_samples, osamp, gRover, inFifoLatency, stepSize;
     
 protected:
     

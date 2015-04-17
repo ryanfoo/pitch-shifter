@@ -46,6 +46,7 @@
 		8BFAA35F1A42C03426595231 /* CarbonEventHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 062A22A1CCCF3C4DA4F1DC43 /* CarbonEventHandler.cpp */; settings = {COMPILER_FLAGS = "-w"; }; };
 		8C63CB5127E93FFC30D672A8 /* CAVectorUnit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C495DBFFBE10B4CCECE0EB0F /* CAVectorUnit.cpp */; settings = {COMPILER_FLAGS = "-w"; }; };
 		8ED2E9D71AD8389200EB6FA4 /* fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 8ED2E9D51AD8389200EB6FA4 /* fft.c */; };
+		8ED2E9DA1AD840C600EB6FA4 /* Shifter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8ED2E9D81AD840C600EB6FA4 /* Shifter.cpp */; };
 		9508490C6EB40C76226C0E1B /* AUMIDIBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 18B5864FA733729D580B93DB /* AUMIDIBase.cpp */; settings = {COMPILER_FLAGS = "-w"; }; };
 		95E488830A5158B286665E9B /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6429E6B615786E6080068DDD /* CoreMIDI.framework */; };
 		9C7213253F2923D700319014 /* juce_VST_Wrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0F56D0F1EA5B7963E519EAFE /* juce_VST_Wrapper.mm */; };
@@ -605,6 +606,8 @@
 		8E8EABE1496A309F63B9161B /* juce_linux_Threads.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_linux_Threads.cpp; path = ../../JuceLibraryCode/modules/juce_core/native/juce_linux_Threads.cpp; sourceTree = SOURCE_ROOT; };
 		8ED2E9D51AD8389200EB6FA4 /* fft.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fft.c; path = ../../Source/fft.c; sourceTree = "<group>"; };
 		8ED2E9D61AD8389200EB6FA4 /* fft.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fft.h; path = ../../Source/fft.h; sourceTree = "<group>"; };
+		8ED2E9D81AD840C600EB6FA4 /* Shifter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Shifter.cpp; path = ../../Source/Shifter.cpp; sourceTree = "<group>"; };
+		8ED2E9D91AD840C600EB6FA4 /* Shifter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Shifter.h; path = ../../Source/Shifter.h; sourceTree = "<group>"; };
 		8F06F930F5B6A8E33463B1C3 /* juce_DropShadowEffect.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_DropShadowEffect.h; path = ../../JuceLibraryCode/modules/juce_graphics/effects/juce_DropShadowEffect.h; sourceTree = SOURCE_ROOT; };
 		8F2DFEC0C3D60FB2A42BA0EB /* juce_AAX_Wrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_AAX_Wrapper.mm; path = ../../JuceLibraryCode/modules/juce_audio_plugin_client/AAX/juce_AAX_Wrapper.mm; sourceTree = SOURCE_ROOT; };
 		901C076CD3A01FB25F24C595 /* juce_mac_Windowing.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_mac_Windowing.mm; path = ../../JuceLibraryCode/modules/juce_gui_basics/native/juce_mac_Windowing.mm; sourceTree = SOURCE_ROOT; };
@@ -1198,6 +1201,8 @@
 				5B8B868EDC171FD6B592E9EF /* PluginEditor.h */,
 				8ED2E9D51AD8389200EB6FA4 /* fft.c */,
 				8ED2E9D61AD8389200EB6FA4 /* fft.h */,
+				8ED2E9D81AD840C600EB6FA4 /* Shifter.cpp */,
+				8ED2E9D91AD840C600EB6FA4 /* Shifter.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -3004,6 +3009,7 @@
 				C427A812556808856695E0E1 /* CAAUParameter.cpp in Sources */,
 				F82A0BDB9860463DE0B687C4 /* CAMutex.cpp in Sources */,
 				8BFAA35F1A42C03426595231 /* CarbonEventHandler.cpp in Sources */,
+				8ED2E9DA1AD840C600EB6FA4 /* Shifter.cpp in Sources */,
 				CC10D5C48A984485AD924BBC /* CAStreamBasicDescription.cpp in Sources */,
 				8C63CB5127E93FFC30D672A8 /* CAVectorUnit.cpp in Sources */,
 				9C83EC501DB6133B980A7075 /* ComponentBase.cpp in Sources */,
