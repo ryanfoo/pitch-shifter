@@ -136,11 +136,33 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     shifter.setParameters(shifterParams);
 }
 
+// Updates Lowpass Filter's Parameters
+void FooHarmonizerAudioProcessor::updateLPFilter(void)
+{
+    IIRCoefficients low_coef = IIRCoefficients::makeLowPass(getSampleRate(), lpVal);
+    lpassFilterL.setCoefficients(low_coef);
+    lpassFilterR.setCoefficients(low_coef);
+}
+
+// Updates Highpass Filter's Parameters
+void FooHarmonizerAudioProcessor::updateHPFilter(void)
+{
+    IIRCoefficients high_coef = IIRCoefficients::makeLowPass(getSampleRate(), hpVal);
+    hpassFilterL.setCoefficients(high_coef);
+    hpassFilterR.setCoefficients(high_coef);
+}
+
 //==============================================================================
 void FooHarmonizerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+    /*
+    updateShifter();
+    updateHPFilter();
+    updateLPFilter();
+     */
 }
 
 void FooHarmonizerAudioProcessor::releaseResources()
@@ -166,16 +188,24 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         // Obtain channel 1 data
         float *monoChannel = buffer.getWritePointer(0);
         
-        // process Mono Data (monoChannel, buffer.getNumSamples)
+        // Pitch Shifting processing
         shifter.processMono(monoChannel, buffer.getNumChannels());
+        // Filter processing
+        lpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
+        hpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
     }
     else if (getNumInputChannels() == 2)
     {
         // Obtain channel 1 and 2 data
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
         
-        // process stereo (leftChannel, rightChannel, buffer.getNumSamples()
+        // Pitch Shifting processing
         shifter.processStereo(leftChannel, rightChannel, buffer.getNumChannels());
+        // Filter processing
+        lpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+        lpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
+        hpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+        hpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
     }
 }
 
