@@ -66,18 +66,17 @@ public:
     // Process Right Channel
     float processSampleR(float inSample);
     
-    float window[WINDOW_SIZE], prev_win[WINDOW_SIZE], cur_win[WINDOW_SIZE],
-          omega[WINDOW_SIZE/2], phi0[WINDOW_SIZE/2], synMag[WINDOW_SIZE],
-          synFreq[WINDOW_SIZE], sumPhase[WINDOW_SIZE/2], anaMagn[WINDOW_SIZE], anaFreq[WINDOW_SIZE],
-          cur_magnitude[WINDOW_SIZE/2], cur_phase[WINDOW_SIZE/2],
-          overlap, freqPerBin, fftData[WINDOW_SIZE],
-          inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE], win, re, im, magn, phs, prev_phs[WINDOW_SIZE/2+1],
-          outData[WINDOW_SIZE*2];
+    float outData[WINDOW_SIZE*2], sumPhase[WINDOW_SIZE/2], anaMagn[WINDOW_SIZE], anaFreq[WINDOW_SIZE],
+          fftData[WINDOW_SIZE], inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE],
+          synMag[WINDOW_SIZE], synFreq[WINDOW_SIZE], prev_phs[WINDOW_SIZE/2+1],
+          win, re, im, magn, phs, freqPerBin, expct;
     int overlap_samples, osamp, gRover, inFifoLatency, stepSize;
     
 protected:
     
 private:
+    // Init Window and Size Properties
+    void initWindow();
     // STFT
     void stft(float* buf, float frameSize, float sign);
     // Pitch shifter's parameters

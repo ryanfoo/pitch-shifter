@@ -41,6 +41,16 @@ void Shifter::prepareToPlay()
     
 }
 
+void Shifter::initWindow()
+{
+    osamp = WINDOW_SIZE/HOP_SIZE;
+    freqPerBin = currentSampleRate / WINDOW_SIZE;
+    stepSize = WINDOW_SIZE/osamp;
+    expct = 2.*M_PI*(float)stepSize/(float)WINDOW_SIZE;
+    inFifoLatency = WINDOW_SIZE - stepSize;
+    if (gRover == 0) gRover = inFifoLatency;
+}
+
 void Shifter::stft(float* buf, float frameSize, float sign)
 {
     float wr, wi, arg, tmp, tr, ti, ur, ui;
@@ -96,11 +106,8 @@ void Shifter::stft(float* buf, float frameSize, float sign)
 void Shifter::processMono(float* const samples, const int numSamples) noexcept
 {
     jassert (samples != nullptr);
-   
-    osamp = WINDOW_SIZE/HOP_SIZE;
-    freqPerBin = currentSampleRate / WINDOW_SIZE;
-    stepSize = WINDOW_SIZE/osamp;
-    inFifoLatency = WINDOW_SIZE - stepSize;
+
+    initWindow();
     // Loop through sample buffer (STFT)
     for (int i = 0; i < numSamples; i++)
     {
@@ -115,10 +122,7 @@ void Shifter::processStereo(float* const left, float* const right, const int num
 {
     jassert (left != nullptr && right != nullptr);
     
-    osamp = WINDOW_SIZE/HOP_SIZE;
-    freqPerBin = currentSampleRate / WINDOW_SIZE;
-    stepSize = WINDOW_SIZE/osamp;
-    inFifoLatency = WINDOW_SIZE - stepSize;
+    initWindow();
     // Loop through sample buffers (STFT)
     for (int i = 0; i < numSamples; i++)
     {
@@ -135,7 +139,6 @@ inline float Shifter::processSampleL(float inSample)
 
     inFIFO[gRover] = inSample;
     y = outFIFO[gRover - inFifoLatency];
-    expct = 2.0f * M_PI * HOP_SIZE / WINDOW_SIZE;
     gRover++;
     
     if (gRover >= WINDOW_SIZE)
@@ -233,7 +236,6 @@ inline float Shifter::processSampleR(float inSample)
     
     inFIFO[gRover] = inSample;
     y = outFIFO[gRover - inFifoLatency];
-    expct = 2.0f * M_PI * HOP_SIZE / WINDOW_SIZE;
     gRover++;
     
     if (gRover >= WINDOW_SIZE)

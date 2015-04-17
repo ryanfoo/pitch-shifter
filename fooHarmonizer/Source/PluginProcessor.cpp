@@ -157,12 +157,6 @@ void FooHarmonizerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    
-    /*
-    updateShifter();
-    updateHPFilter();
-    updateLPFilter();
-     */
 }
 
 void FooHarmonizerAudioProcessor::releaseResources()
