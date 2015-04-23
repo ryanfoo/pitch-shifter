@@ -51,10 +51,10 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     setSize (500, 500);
     
     // Create Sliders
-    createSlider(mixSlider, Slider::Rotary, processor.mixVal, 0, 1.0f, 0.01f, "Mix");
-    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, -12, 12, 1, "Semitone");
-    createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0, 20000, 10, "Lowpass Filter");
-    createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0, 20000, 10, "Highpass Filter");
+    createSlider(mixSlider, Slider::Rotary, 0.5f, 0.0, 1.0f, 0.01f, "Mix");
+    createSlider(pitchSlider, Slider::Rotary, 6, -12, 12, 1, "Semitone");
+    createSlider(lowpassSlider, Slider::Rotary, 0.0f, 0.0, 20000, 10, "Lowpass Filter");
+    createSlider(highpassSlider, Slider::Rotary, 0.0f, 0.0, 20000, 10, "Highpass Filter");
     // Create Labels
     createLabel(mixText, "Mix");
     createLabel(pitchText, "Semitone");

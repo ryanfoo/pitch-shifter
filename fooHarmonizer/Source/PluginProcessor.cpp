@@ -134,6 +134,14 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     shifterParams.hpf = hpVal;
     
     shifter.setParameters(shifterParams);
+    
+    IIRCoefficients low_coef = IIRCoefficients::makeLowPass(getSampleRate(), lpVal);
+    lpassFilterL.setCoefficients(low_coef);
+    lpassFilterR.setCoefficients(low_coef);
+    
+    IIRCoefficients high_coef = IIRCoefficients::makeLowPass(getSampleRate(), hpVal);
+    hpassFilterL.setCoefficients(high_coef);
+    hpassFilterR.setCoefficients(high_coef);
 }
 
 // Updates Lowpass Filter's Parameters

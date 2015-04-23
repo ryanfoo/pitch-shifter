@@ -29,14 +29,16 @@ public:
     struct Parameters
     {
         Parameters() noexcept
-        : pitch(6),
-        lpf(0),
-        hpf(0),
+        : pitch(12),
+        lpf(0.0f),
+        hpf(0.0f),
         mix(0.50f)
         {}
         
         int pitch;
-        float lpf, hpf, mix;
+        float lpf;
+        float hpf;
+        float mix;
     };
     
     // Get parameters
@@ -70,7 +72,7 @@ public:
           fftData[WINDOW_SIZE], inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE],
           synMag[WINDOW_SIZE], synFreq[WINDOW_SIZE], prev_phs[WINDOW_SIZE/2+1],
           win, re, im, magn, phs, freqPerBin, expct;
-    int overlap_samples, osamp, gRover, inFifoLatency, stepSize;
+    long overlap_samples, osamp, gRover, inFifoLatency, stepSize;
     
 protected:
     
