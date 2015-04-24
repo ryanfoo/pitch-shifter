@@ -13,7 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             4096
+#define WINDOW_SIZE             2048
 
 class Shifter
 {
@@ -78,6 +78,8 @@ public:
 protected:
     
 private:
+    // Init vars
+    void initArrays();
     // STFT
     void stft(float* buf, float frameSize, float sign);
     // Pitch shifter's parameters

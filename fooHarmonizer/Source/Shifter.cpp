@@ -25,25 +25,6 @@ Shifter::Shifter() : currentSampleRate(INIT_SAMPLE_RATE)
 {
     setParameters(Parameters());
     setSampleRate(INIT_SAMPLE_RATE);
-    
-    osamp = 32;
-    frameSize   = WINDOW_SIZE/2;
-    stepSize    = WINDOW_SIZE/osamp;
-    freqPerBin  = currentSampleRate/WINDOW_SIZE;
-    expct = 2. * M_PI * stepSize / WINDOW_SIZE;
-    inFifoLatency = WINDOW_SIZE-stepSize;
-    if (gRover == 0) gRover = inFifoLatency;
-    
-    memset(inFifoL,  0, WINDOW_SIZE*sizeof(float));
-    memset(inFifoR,  0, WINDOW_SIZE*sizeof(float));
-    memset(outFifoL, 0, WINDOW_SIZE*sizeof(float));
-    memset(outFifoR, 0, WINDOW_SIZE*sizeof(float));
-    memset(fftData, 0, WINDOW_SIZE*2*sizeof(float));
-    memset(prevPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
-    memset(sumPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
-    memset(anaFreq, 0, WINDOW_SIZE*sizeof(float));
-    memset(anaMagn, 0, WINDOW_SIZE*sizeof(float));
-    memset(outData, 0, WINDOW_SIZE*2*sizeof(float));
 }
 
 // Deconstructor
@@ -68,6 +49,28 @@ void Shifter::setSampleRate(const double sampleRate)
 void Shifter::prepareToPlay()
 {
     
+}
+
+void Shifter::initArrays()
+{
+    osamp = 32;
+    frameSize   = WINDOW_SIZE/2;
+    stepSize    = WINDOW_SIZE/osamp;
+    freqPerBin  = currentSampleRate/WINDOW_SIZE;
+    expct = 2. * M_PI * stepSize / WINDOW_SIZE;
+    inFifoLatency = WINDOW_SIZE-stepSize;
+    if (gRover == 0) gRover = inFifoLatency;
+    
+    memset(inFifoL,  0, WINDOW_SIZE*sizeof(float));
+    memset(inFifoR,  0, WINDOW_SIZE*sizeof(float));
+    memset(outFifoL, 0, WINDOW_SIZE*sizeof(float));
+    memset(outFifoR, 0, WINDOW_SIZE*sizeof(float));
+    memset(fftData, 0, WINDOW_SIZE*2*sizeof(float));
+    memset(prevPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
+    memset(sumPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
+    memset(anaFreq, 0, WINDOW_SIZE*sizeof(float));
+    memset(anaMagn, 0, WINDOW_SIZE*sizeof(float));
+    memset(outData, 0, WINDOW_SIZE*2*sizeof(float));
 }
 
 /*
@@ -136,6 +139,8 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
 {
     jassert (samples != nullptr);
 
+    initArrays();
+    
     for (int i = 0; i < numSamples; i++)
     {
         inFifoL[gRover] = samples[i*2];
@@ -157,6 +162,8 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
 void Shifter::processStereo(float* const left, float* const right, const int numSamples) noexcept
 {
     jassert (left != nullptr && right != nullptr);
+    
+    initArrays();
     
     for (int i = 0; i < numSamples; i++)
     {

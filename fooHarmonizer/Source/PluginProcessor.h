@@ -67,10 +67,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     
     // Variables
-    float mixVal;
-    int pitchVal;
-    float lpVal;
-    float hpVal;
+    float mixVal = 0.5f;
+    int pitchVal = 12;
+    float lpVal = 0.0f;
+    float hpVal = 0.0f;
     // GUI Update
     void updateShifter(void);
     void updateLPFilter(void);
