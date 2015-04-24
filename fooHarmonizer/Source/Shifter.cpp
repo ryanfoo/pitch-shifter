@@ -18,7 +18,6 @@
 
 
 #include "Shifter.h"
-#include "fft.h"
 
 // Constructor
 // Set Initial Parameters and sample rate (44100)
@@ -26,6 +25,25 @@ Shifter::Shifter() : currentSampleRate(INIT_SAMPLE_RATE)
 {
     setParameters(Parameters());
     setSampleRate(INIT_SAMPLE_RATE);
+    
+    osamp = 32;
+    frameSize   = WINDOW_SIZE/2;
+    stepSize    = WINDOW_SIZE/osamp;
+    freqPerBin  = currentSampleRate/WINDOW_SIZE;
+    expct = 2. * M_PI * stepSize / WINDOW_SIZE;
+    inFifoLatency = WINDOW_SIZE-stepSize;
+    if (gRover == 0) gRover = inFifoLatency;
+    
+    memset(inFifoL,  0, WINDOW_SIZE*sizeof(float));
+    memset(inFifoR,  0, WINDOW_SIZE*sizeof(float));
+    memset(outFifoL, 0, WINDOW_SIZE*sizeof(float));
+    memset(outFifoR, 0, WINDOW_SIZE*sizeof(float));
+    memset(fftData, 0, WINDOW_SIZE*2*sizeof(float));
+    memset(prevPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
+    memset(sumPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
+    memset(anaFreq, 0, WINDOW_SIZE*sizeof(float));
+    memset(anaMagn, 0, WINDOW_SIZE*sizeof(float));
+    memset(outData, 0, WINDOW_SIZE*2*sizeof(float));
 }
 
 // Deconstructor
@@ -52,21 +70,19 @@ void Shifter::prepareToPlay()
     
 }
 
-void Shifter::initWindow()
-{
-    osamp = WINDOW_SIZE/HOP_SIZE;
-    freqPerBin = currentSampleRate / WINDOW_SIZE;
-    stepSize = WINDOW_SIZE/osamp;
-    expct = 2.*M_PI*(float)stepSize/(float)WINDOW_SIZE;
-    inFifoLatency = WINDOW_SIZE - stepSize;
-    if (gRover == false) gRover = inFifoLatency;
-}
-
+/*
+ * STFT - short time fourier transform
+ * Variables -
+ *      buf: Incoming Signal (either time-domain or frequency-domain)
+ *      frameSize: Window Size of FFT analysis
+ *      sign: Indicates FFT (-1) or IFFT (+1)
+ */
 void Shifter::stft(float* buf, float frameSize, float sign)
 {
     float wr, wi, arg, tmp, tr, ti, ur, ui;
     int i, j, bit, le, le2, k;
     
+    // Reverse Binary Indexing
     for (i = 2; i < frameSize*2-2; i += 2)
     {
         for (bit = 2, j = 0; bit < frameSize*2; bit <<= 1)
@@ -76,6 +92,7 @@ void Shifter::stft(float* buf, float frameSize, float sign)
         }
         if (i < j)
         {
+            // Replace w/ <algorithm> swap?
             tmp = buf[i];
             buf[i] = buf[j];
             buf[j] = tmp;
@@ -85,6 +102,7 @@ void Shifter::stft(float* buf, float frameSize, float sign)
         }
     }
     
+    // Danielson-Lanczos section
     float max = (float)(logl(frameSize)/logl(2.0) + 0.5);
     for (k = 0, le = 2; k < max; k++)
     {
@@ -118,13 +136,20 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
 {
     jassert (samples != nullptr);
 
-    initWindow();
-    // Loop through sample buffer (STFT)
     for (int i = 0; i < numSamples; i++)
     {
-        // Interpolate data
-        if (i % 2 == 0) samples[i] = processSampleL(samples[i]);
-        else samples[i] = processSampleR(samples[i]);
+        inFifoL[gRover] = samples[i*2];
+        inFifoR[gRover] = samples[i*2+1];
+        samples[i*2] = samples[i*2] * (1.0 - parameters.mix) + outFifoL[gRover-inFifoLatency] * parameters.mix;
+        samples[i*2+1] = samples[i*2+1] * (1.0 - parameters.mix) + outFifoR[gRover-inFifoLatency] * parameters.mix;
+        gRover++;
+        
+        if (gRover >= WINDOW_SIZE)
+        {
+            gRover = inFifoLatency;
+            processSampleL();
+            processSampleR();
+        }
     }
 }
 
@@ -133,169 +158,195 @@ void Shifter::processStereo(float* const left, float* const right, const int num
 {
     jassert (left != nullptr && right != nullptr);
     
-    initWindow();
-    // Loop through sample buffers (STFT)
     for (int i = 0; i < numSamples; i++)
     {
-        //left[i] = processSampleL(left[i]);
-        //right[i] = processSampleR(right[i]);
+        inFifoL[gRover] = left[i];
+        inFifoR[gRover] = right[i];
+        left[i] = left[i] * (1.0 - parameters.mix) + outFifoL[gRover-inFifoLatency] * parameters.mix;
+        right[i] = right[i] * (1.0 - parameters.mix) + outFifoR[gRover-inFifoLatency] * parameters.mix;
+        gRover++;
+        
+        if (gRover >= WINDOW_SIZE)
+        {
+            gRover = inFifoLatency;
+            processSampleL();
+            processSampleR();
+        }
     }
 }
 
-inline float Shifter::processSampleL(float inSample)
+inline void Shifter::processSampleL()
 {
-    float y, tmp, expct;
-    long j;
-    int i;
-
-    for (i = 0; i < WINDOW_SIZE; i++)
+    float tmp, phase;
+    
+    for (int i = 0; i < WINDOW_SIZE; i++)
     {
-        win = -0.5f * cosf(2.0f * M_PI * (float)i / (float)WINDOW_SIZE) + 0.5f;
-        
-        fftData[0] = (float)(inSample * win);
-        fftData[i*2+1] = 0.0f;
+        window = -0.5f * cosf(2. * M_PI * (float)i/(float)WINDOW_SIZE) + 0.5f;
+        fftData[i*2] = inFifoL[i] * window;
+        fftData[i*2+1] = 0.;
     }
     
     stft(fftData, WINDOW_SIZE, -1);
-    // Calculate Magnitude and Phases for FFT Data
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    
+    for (int i = 0; i <= frameSize; i++)
     {
         re = fftData[i*2];
         im = fftData[i*2+1];
         
-        magn = 2.0f * sqrt(pow(re, 2) + pow(im, 2));
-        phs = atan2f(im, re);
+        magn = 2. * sqrt(pow(re,2) + pow(im,2));
+        phase = atan2f(im, re);
         
-        tmp = phs - prev_phs[i];
-        prev_phs[i] = phs;
+        tmp = phase - prevPhase[i];
+        prevPhase[i] = phase;
         
-        tmp -= (float)i * expct;
+        tmp -= (float)i*expct;
         
-        int qpd = (float)(tmp/M_PI);
-        if (qpd >= 0) qpd += qpd & 1;
-        else qpd -= qpd & 1;
+        qpd = tmp/M_PI;
+        if (qpd >= 0) qpd += (qpd & 1);
+        else qpd -= (qpd & 1);
         tmp -= M_PI*(float)qpd;
         
-        tmp = osamp * tmp / (2. * M_PI);
+        tmp = osamp*tmp/(2*M_PI);
+        tmp = (float)i*freqPerBin + tmp*freqPerBin;
         
-        tmp = (float)i * freqPerBin + tmp * freqPerBin;
-        anaMagn[i] = (float)magn;
-        anaFreq[i] = (float)tmp;
+        anaMagn[i] = magn;
+        anaFreq[i] = tmp;
     }
     
-    // PROCESSING
-    memset(synMag, 0, WINDOW_SIZE*sizeof(float));
+    memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
     memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
-    // Apply new pitch to the phases
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    
+    for (int i = 0; i <= frameSize; i++)
     {
-        j = (float)(i * 12/*parameters.pitch*/);
-        if (j <= WINDOW_SIZE/2)
+        idx = i*parameters.pitch;
+        if (idx <= frameSize)
         {
-            synMag[j] += anaMagn[i];
-            synFreq[j] = anaFreq[i] * parameters.pitch;
+            synMagn[idx] += anaMagn[i];
+            synFreq[idx] = anaFreq[i] * parameters.pitch;
         }
     }
     
-    // SYNTHESIS
-    // Convert data back into sine wave data
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    for (int i = 0; i <= frameSize; i++)
     {
-        magn = synMag[i];
+        magn = synMagn[i];
         tmp = synFreq[i];
         
-        tmp -= (float)i * freqPerBin;
+        tmp -= (float)i*freqPerBin;
+        
         tmp /= freqPerBin;
-        tmp = 2.0f * M_PI * tmp / osamp;
-        tmp += (float)i * expct;
         
-        sumPhase[i] += (float)tmp;
-        phs = sumPhase[i];
+        tmp = 2. * M_PI * tmp / osamp;
         
-        fftData[i*2] = (float)(magn * cosf(phs));
-        fftData[i*2+1] = (float(magn * sinf(phs)));
+        tmp += (float)i*expct;
+        
+        sumPhase[i] += tmp;
+        phase = sumPhase[i];
+        
+        fftData[i*2]    = magn * cosf(phase);
+        fftData[i*2+1]  = magn * sinf(phase);
     }
     
-    y = fftData[0];
+    for (int i = WINDOW_SIZE+2; i < WINDOW_SIZE*2; i++) fftData[i] = 0.;
     
-    return inSample*(1.0-parameters.mix) + y * parameters.mix;
+    stft(fftData, WINDOW_SIZE, 1);
+    
+    for (int i = 0; i < WINDOW_SIZE; i++)
+    {
+        window = -0.5f * cosf(2.*M_PI*(float)i/WINDOW_SIZE) + 0.5f;
+        outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
+    }
+    
+    for (int i = 0; i < stepSize; i++) outFifoL[i] = outData[i];
+    
+    memmove(outData, outData+stepSize, WINDOW_SIZE*sizeof(float));
+    
+    for (int i = 0; i < inFifoLatency; i++) inFifoL[i] = inFifoL[i+stepSize];
 }
 
-inline float Shifter::processSampleR(float inSample)
+inline void Shifter::processSampleR()
 {
-    float y, tmp, expct;
-    long j;
-    int i;
+    float tmp, phase;
     
-    for (i = 0; i < WINDOW_SIZE; i++)
+    for (int i = 0; i < WINDOW_SIZE; i++)
     {
-        win = -0.5f * cosf(2.0f * M_PI * (float)i / (float)WINDOW_SIZE) + 0.5f;
-        
-        fftData[0] = (float)(inSample * win);
-        fftData[i*2+1] = 0.0f;
+        window = -0.5f * cosf(2. * M_PI * (float)i/(float)WINDOW_SIZE) + 0.5f;
+        fftData[i*2] = inFifoR[i] * window;
+        fftData[i*2+1] = 0.;
     }
     
     stft(fftData, WINDOW_SIZE, -1);
-    // Calculate Magnitude and Phases for FFT Data
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    
+    for (int i = 0; i <= frameSize; i++)
     {
         re = fftData[i*2];
         im = fftData[i*2+1];
         
-        magn = 2.0f * sqrt(pow(re, 2) + pow(im, 2));
-        phs = atan2f(im, re);
+        magn = 2. * sqrt(pow(re,2) + pow(im,2));
+        phase = atan2f(im, re);
         
-        tmp = phs - prev_phs[i];
-        prev_phs[i] = phs;
+        tmp = phase - prevPhase[i];
+        prevPhase[i] = phase;
         
-        tmp -= (float)i * expct;
+        tmp -= (float)i*expct;
         
-        int qpd = (float)(tmp/M_PI);
-        if (qpd >= 0) qpd += qpd & 1;
-        else qpd -= qpd & 1;
+        qpd = tmp/M_PI;
+        if (qpd >= 0) qpd += (qpd & 1);
+        else qpd -= (qpd & 1);
         tmp -= M_PI*(float)qpd;
         
-        tmp = osamp * tmp / (2. * M_PI);
+        tmp = osamp*tmp/(2*M_PI);
+        tmp = (float)i*freqPerBin + tmp*freqPerBin;
         
-        tmp = (float)i * freqPerBin + tmp * freqPerBin;
-        anaMagn[i] = (float)magn;
-        anaFreq[i] = (float)tmp;
+        anaMagn[i] = magn;
+        anaFreq[i] = tmp;
     }
     
-    // PROCESSING
-    memset(synMag, 0, WINDOW_SIZE*sizeof(float));
+    memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
     memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
-    // Apply new pitch to the phases
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    
+    for (int i = 0; i <= frameSize; i++)
     {
-        j = (float)(i * parameters.pitch);
-        if (j <= WINDOW_SIZE/2)
+        idx = i*parameters.pitch;
+        if (idx <= frameSize)
         {
-            synMag[j] += anaMagn[i];
-            synFreq[j] = anaFreq[i] * parameters.pitch;
+            synMagn[idx] += anaMagn[i];
+            synFreq[idx] = anaFreq[i] * parameters.pitch;
         }
     }
     
-    // SYNTHESIS
-    // Convert data back into sine wave data
-    for (i = 0; i <= WINDOW_SIZE/2; i++)
+    for (int i = 0; i <= frameSize; i++)
     {
-        magn = synMag[i];
+        magn = synMagn[i];
         tmp = synFreq[i];
         
-        tmp -= (float)i * freqPerBin;
+        tmp -= (float)i*freqPerBin;
+        
         tmp /= freqPerBin;
-        tmp = 2.0f * M_PI * tmp / osamp;
-        tmp += (float)i * expct;
         
-        sumPhase[i] += (float)tmp;
-        phs = sumPhase[i];
+        tmp = 2. * M_PI * tmp / osamp;
         
-        fftData[i*2] = (float)(magn * cosf(phs));
-        fftData[i*2+1] = (float(magn * sinf(phs)));
+        tmp += (float)i*expct;
+        
+        sumPhase[i] += tmp;
+        phase = sumPhase[i];
+        
+        fftData[i*2]    = magn * cosf(phase);
+        fftData[i*2+1]  = magn * sinf(phase);
     }
     
-    y = fftData[0];
-
-    return inSample*(1.0-parameters.mix) + y * parameters.mix;
+    for (int i = WINDOW_SIZE+2; i < WINDOW_SIZE*2; i++) fftData[i] = 0.;
+    
+    stft(fftData, WINDOW_SIZE, 1);
+    
+    for (int i = 0; i < WINDOW_SIZE; i++)
+    {
+        window = -0.5f * cosf(2.*M_PI*(float)i/WINDOW_SIZE) + 0.5f;
+        outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
+    }
+    
+    for (int i = 0; i < stepSize; i++) outFifoR[i] = outData[i];
+    
+    memmove(outData, outData+stepSize, WINDOW_SIZE*sizeof(float));
+    
+    for (int i = 0; i < inFifoLatency; i++) inFifoR[i] = inFifoR[i+stepSize];
 }

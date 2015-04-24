@@ -11,11 +11,9 @@
 
 // #include <stdio.h>
 #include "../JuceLibraryCode/JuceHeader.h"
-// #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             2048
-#define HOP_SIZE                512
+#define WINDOW_SIZE             4096
 
 class Shifter
 {
@@ -63,22 +61,23 @@ public:
     void processStereo(float* const left, float* const right, const int numSamples) noexcept;
     
     // Process Left Channel
-    float processSampleL(float inSample);
+    void processSampleL();
     
     // Process Right Channel
-    float processSampleR(float inSample);
+    void processSampleR();
+
+    float inFifoL[WINDOW_SIZE], inFifoR[WINDOW_SIZE], outFifoL[WINDOW_SIZE], outFifoR[WINDOW_SIZE],
+          fftData[WINDOW_SIZE*2], prevPhase[WINDOW_SIZE/2+1], sumPhase[WINDOW_SIZE/2+1], outData[WINDOW_SIZE*2],
+          anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
     
-    float outData[WINDOW_SIZE*2], sumPhase[WINDOW_SIZE/2], anaMagn[WINDOW_SIZE], anaFreq[WINDOW_SIZE],
-          fftData[WINDOW_SIZE], inFIFO[WINDOW_SIZE], outFIFO[WINDOW_SIZE],
-          synMag[WINDOW_SIZE], synFreq[WINDOW_SIZE], prev_phs[WINDOW_SIZE/2+1],
-          win, re, im, magn, phs, freqPerBin, expct;
-    long overlap_samples, osamp, gRover, inFifoLatency, stepSize;
+    float magn, window, re, im, freqPerBin, expct;
+    
+    long gRover = 0, osamp, qpd, idx, inFifoLatency, stepSize, frameSize;
+    
     
 protected:
     
 private:
-    // Init Window and Size Properties
-    void initWindow();
     // STFT
     void stft(float* buf, float frameSize, float sign);
     // Pitch shifter's parameters

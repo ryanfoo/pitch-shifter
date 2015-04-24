@@ -135,13 +135,8 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     
     shifter.setParameters(shifterParams);
     
-    IIRCoefficients low_coef = IIRCoefficients::makeLowPass(getSampleRate(), lpVal);
-    lpassFilterL.setCoefficients(low_coef);
-    lpassFilterR.setCoefficients(low_coef);
-    
-    IIRCoefficients high_coef = IIRCoefficients::makeLowPass(getSampleRate(), hpVal);
-    hpassFilterL.setCoefficients(high_coef);
-    hpassFilterR.setCoefficients(high_coef);
+    updateLPFilter();
+    updateHPFilter();
 }
 
 // Updates Lowpass Filter's Parameters
@@ -183,7 +178,9 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
     // this code if your algorithm already fills all the output channels.
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-
+    
+    // We get 512 samples per call
+    
     // Process Audio
     if (getNumInputChannels() == 1)
     {
@@ -191,10 +188,10 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *monoChannel = buffer.getWritePointer(0);
         
         // Pitch Shifting processing
-        shifter.processMono(monoChannel, buffer.getNumChannels());
+        shifter.processMono(monoChannel, buffer.getNumSamples());
         // Filter processing
-        lpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
-        hpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
+        // lpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
+        // hpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
     }
     else if (getNumInputChannels() == 2)
     {
@@ -202,12 +199,12 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
         
         // Pitch Shifting processing
-        shifter.processStereo(leftChannel, rightChannel, buffer.getNumChannels());
+        shifter.processStereo(leftChannel, rightChannel, buffer.getNumSamples());
         // Filter processing
-        lpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
-        lpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
-        hpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
-        hpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
+        // lpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+        // lpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
+        // hpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+        // hpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
     }
 }
 
