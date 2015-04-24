@@ -13,7 +13,8 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             8192
+#define WINDOW_SIZE             256    // 2048
+#define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
 {

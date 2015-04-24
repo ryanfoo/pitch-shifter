@@ -53,11 +53,11 @@ void Shifter::prepareToPlay()
 
 void Shifter::initArrays()
 {
-    osamp = 32;
+    osamp = WINDOW_SIZE/HOP_SIZE;
     frameSize   = WINDOW_SIZE/2;
     stepSize    = WINDOW_SIZE/osamp;
-    freqPerBin  = currentSampleRate/WINDOW_SIZE;
-    expct = 2. * M_PI * stepSize / WINDOW_SIZE;
+    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
+    expct = 2. * M_PI * (float)stepSize / (float)WINDOW_SIZE;
     inFifoLatency = WINDOW_SIZE-stepSize;
     if (gRover == 0) gRover = inFifoLatency;
     
@@ -257,7 +257,7 @@ inline void Shifter::processSampleL()
     
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
-        window = -0.5f * cosf(2.*M_PI*(float)i/WINDOW_SIZE) + 0.5f;
+        window = -0.5f * cosf(2.*M_PI*(float)i/(float)WINDOW_SIZE) + 0.5f;
         outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
         if (isnan(outData[i])) outData[i] = 0;
     }
@@ -346,7 +346,7 @@ inline void Shifter::processSampleR()
     
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
-        window = -0.5f * cosf(2.*M_PI*(float)i/WINDOW_SIZE) + 0.5f;
+        window = -0.5f * cosf(2.*M_PI*(float)i/(float)WINDOW_SIZE) + 0.5f;
         outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
         if (isnan(outData[i])) outData[i] = 0;
     }
