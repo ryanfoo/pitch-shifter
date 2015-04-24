@@ -13,7 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             2048
+#define WINDOW_SIZE             8192
 
 class Shifter
 {
@@ -74,6 +74,7 @@ public:
     
     long gRover = 0, osamp, qpd, idx, inFifoLatency, stepSize, frameSize;
     
+    bool monoStatus = false, stereoStatus = false;
     
 protected:
     
