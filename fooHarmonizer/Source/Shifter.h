@@ -28,7 +28,7 @@ public:
     struct Parameters
     {
         Parameters() noexcept
-        : pitch(12),
+        : pitch(1.0f),
         lpf(0.0f),
         hpf(0.0f),
         mix(0.50f)

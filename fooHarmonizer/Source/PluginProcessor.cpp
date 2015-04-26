@@ -179,8 +179,6 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
-    // We get 512 samples per call
-    
     // Process Audio
     if (getNumInputChannels() == 1)
     {
