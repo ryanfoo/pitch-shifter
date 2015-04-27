@@ -53,24 +53,29 @@ void Shifter::prepareToPlay()
 
 void Shifter::initArrays()
 {
-    osamp = WINDOW_SIZE/HOP_SIZE;
-    frameSize   = WINDOW_SIZE/2;
-    stepSize    = WINDOW_SIZE/osamp;
-    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
-    expct = 2. * M_PI * (float)stepSize / (float)WINDOW_SIZE;
-    inFifoLatency = WINDOW_SIZE-stepSize;
-    if (gRover == 0) gRover = inFifoLatency;
+    osamp = win_size/hop_size;
+    frameSize   = win_size/2;
+    stepSize    = win_size/osamp;
+    freqPerBin  = currentSampleRate/win_size;
     
-    memset(inFifoL,  0, WINDOW_SIZE*sizeof(float));
-    memset(inFifoR,  0, WINDOW_SIZE*sizeof(float));
-    memset(outFifoL, 0, WINDOW_SIZE*sizeof(float));
-    memset(outFifoR, 0, WINDOW_SIZE*sizeof(float));
-    memset(fftData, 0, WINDOW_SIZE*2*sizeof(float));
-    memset(prevPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
-    memset(sumPhase, 0, (WINDOW_SIZE/2+1)*sizeof(float));
-    memset(anaFreq, 0, WINDOW_SIZE*sizeof(float));
-    memset(anaMagn, 0, WINDOW_SIZE*sizeof(float));
-    memset(outData, 0, WINDOW_SIZE*2*sizeof(float));
+    hanning(win, win_size);
+    memset(pre_win, 0, win_size*sizeof(float));
+    
+    overlap = (win_size - hop_size) / (float)win_size;
+    overlap_samples = overlap * win_size;
+    
+    for (int i = 0; i < win_size/2; i++)
+    {
+        om[i] = 2. * M_PI * i * osamp * (float)hop_size / (float)win_size;
+    }
+    
+    for (int i = 0; i < win_size; i++)
+    {
+        win[i] *= 2. / osamp;
+    }
+    
+    memset(phi, 0, win_size/2*sizeof(float));
+    memset(sumPhase, 0, win_size/2*sizeof(float));
 }
 
 /*
@@ -129,25 +134,124 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
 {
     jassert (samples != nullptr);
 
+    win_size = (float)numSamples/4;
+    hop_size = win_size/4;
+    
+    int i, j, index;
+    float tmp;
+    
     if (monoStatus == false)
     {
         initArrays();
         monoStatus = true;
     }
     
-    for (int i = 0; i < numSamples; i++)
+    for (i = 0; i < numSamples; i += hop_size)
     {
-        inFifoL[gRover] = samples[i*2];
-        inFifoR[gRover] = samples[i*2+1];
-        samples[i*2] = samples[i*2] * (1.0 - parameters.mix) + outFifoL[gRover-inFifoLatency] * parameters.mix;
-        samples[i*2+1] = samples[i*2+1] * (1.0 - parameters.mix) + outFifoR[gRover-inFifoLatency] * parameters.mix;
-        gRover++;
+        // ANALYSIS
+        /* Apply window to current frame */
+        for (j = 0; j < win_size; j++) {
+            cur_win[j] = samples[i+j];
+        }
+        apply_window(cur_win, win, win_size);
         
-        if (gRover >= WINDOW_SIZE)
+        // Obtain minimum phase by shifting time domain data before taking FFT
+        fftshift(cur_win, win_size);
+        
+        /* FFT */
+        rfft(cur_win, win_size/2, FFT_FORWARD);
+        complex *cbuf = (complex *)cur_win;
+        
+        /* Get Magnitude and Phase (polar coordinates) */
+        for (j = 0; j < win_size/2; j++) {
+            cur_mag[j] = cmp_abs(cbuf[j]);
+            cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+        }
+        
+        for (j = 0; j < win_size/2; j++) {
+            // Get phase difference
+            tmp = cur_phs[j] - phi[j];
+            phi[j] = cur_phs[j];
+            
+            // Subtract expected phase difference
+            tmp -= om[j];
+            
+            // Map to +/- Pi interval
+            tmp = princarg(tmp);
+            
+            // get deviation from bin freq from the +/- pi interval
+            tmp = osamp * tmp / (2. * M_PI);
+            
+            // compute the k-th partials' true frequency
+            tmp = (float) j * freqPerBin + tmp * freqPerBin;
+            
+            // Store true frequency
+            anaFreq[j] = tmp;
+        }
+        
+        // PROCESSING
+        memset(synMagn, 0, win_size*sizeof(float));
+        memset(synFreq, 0, win_size*sizeof(float));
+        for (j = 0; j < win_size/2; j++) {
+            index = j * parameters.pitch;
+            if (index < win_size/2) {
+                synMagn[index] += cur_mag[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
+                // This next line should commented, for for some reason it sounds better like this
+                // data->gSynFreq[index] = data->gAnaFreq[j];
+            }
+        }
+        
+        // SYNTHESIS
+        for (j = 0; j < win_size/2; j++) {
+            /* get magnitude and true frequency from synthesis arrays */
+            cur_mag[j] = synMagn[j];
+            
+            /* subtract bin mid frequency */
+            tmp = synFreq[j] - (float)j * freqPerBin;
+            
+            /* get bin deviation from freq deviation */
+            tmp /= freqPerBin;
+            
+            /* take osamp into account */
+            tmp = 2. * M_PI * tmp / (float)osamp;
+            
+            /* add the overlap phase advance back in */
+            tmp += om[j];
+            
+            // accumulate delta phase to get bin phase
+            sumPhase[j] += tmp;
+            cur_phs[j] = sumPhase[j];
+        }
+        
+        /* Back to Cartesian coordinates */
+        for (j = 0; j < win_size/2; j++) {
+            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
+            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+        }
+        
+        /* Back to Time Domain */
+        rfft((float*)cbuf, win_size/2, FFT_INVERSE);
+        
+        /* Assign to the output */
+        for (j = 0; j < hop_size; j++) {
+            outData[i+j] = pre_win[j + hop_size] + cur_win[j];
+        }
+        
+        /* Move previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] = (j < overlap_samples) ?
+            pre_win[j + hop_size] : 0;
+        }
+        
+        /* Update previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] += cur_win[j];
+        }
+        
+        for (j = 0; j < hop_size; j++)
         {
-            gRover = inFifoLatency;
-            processSampleL();
-            processSampleR();
+            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
 }
@@ -157,203 +261,268 @@ void Shifter::processStereo(float* const left, float* const right, const int num
 {
     jassert (left != nullptr && right != nullptr);
     
+    win_size = (float)numSamples/4;
+    hop_size = win_size/4;
+    
+    // float tmpL, tmpR;
+    
     if (stereoStatus == false)
     {
         initArrays();
         stereoStatus = true;
     }
+}
 
-    for (int i = 0; i < numSamples; i++)
+void Shifter::processSampleL(float* const buf, const int numSamples) noexcept
+{
+    jassert (buf != nullptr);
+    
+    win_size = numSamples/4;
+    hop_size = win_size/4;
+    
+    float tmp;
+    int i, j, index;
+    
+    if (stereoStatus == false)
     {
-        inFifoL[gRover] = left[i];
-        inFifoR[gRover] = right[i];
-        left[i] = inFifoL[gRover] * (1.0 - parameters.mix) + outFifoL[gRover-inFifoLatency] * parameters.mix;
-        right[i] = inFifoR[gRover] * (1.0 - parameters.mix) + outFifoR[gRover-inFifoLatency] * parameters.mix;
-        gRover++;
+        initArrays();
+        stereoStatus = true;
+    }
+    
+    for (i = 0; i < numSamples; i += hop_size)
+    {
+        // ANALYSIS
+        /* Apply window to current frame */
+        for (j = 0; j < win_size; j++) {
+            cur_win[j] = buf[i+j];
+        }
+        apply_window(cur_win, win, win_size);
         
-        if (gRover >= WINDOW_SIZE)
+        // Obtain minimum phase by shifting time domain data before taking FFT
+        fftshift(cur_win, win_size);
+        
+        /* FFT */
+        rfft(cur_win, win_size/2, FFT_FORWARD);
+        complex *cbuf = (complex *)cur_win;
+        
+        /* Get Magnitude and Phase (polar coordinates) */
+        for (j = 0; j < win_size/2; j++) {
+            cur_mag[j] = cmp_abs(cbuf[j]);
+            cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+        }
+        
+        for (j = 0; j < win_size/2; j++) {
+            // Get phase difference
+            tmp = cur_phs[j] - phi[j];
+            phi[j] = cur_phs[j];
+            
+            // Subtract expected phase difference
+            tmp -= om[j];
+            
+            // Map to +/- Pi interval
+            tmp = princarg(tmp);
+            
+            // get deviation from bin freq from the +/- pi interval
+            tmp = osamp * tmp / (2. * M_PI);
+            
+            // compute the k-th partials' true frequency
+            tmp = (float) j * freqPerBin + tmp * freqPerBin;
+            
+            // Store true frequency
+            anaFreq[j] = tmp;
+        }
+        
+        // PROCESSING
+        memset(synMagn, 0, win_size*sizeof(float));
+        memset(synFreq, 0, win_size*sizeof(float));
+        for (j = 0; j < win_size/2; j++) {
+            index = j * parameters.pitch;
+            if (index < win_size/2) {
+                synMagn[index] += cur_mag[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
+                // This next line should commented, for for some reason it sounds better like this
+                // data->gSynFreq[index] = data->gAnaFreq[j];
+            }
+        }
+        
+        // SYNTHESIS
+        for (j = 0; j < win_size/2; j++) {
+            /* get magnitude and true frequency from synthesis arrays */
+            cur_mag[j] = synMagn[j];
+            
+            /* subtract bin mid frequency */
+            tmp = synFreq[j] - (float)j * freqPerBin;
+            
+            /* get bin deviation from freq deviation */
+            tmp /= freqPerBin;
+            
+            /* take osamp into account */
+            tmp = 2. * M_PI * tmp / (float)osamp;
+            
+            /* add the overlap phase advance back in */
+            tmp += om[j];
+            
+            // accumulate delta phase to get bin phase
+            sumPhase[j] += tmp;
+            cur_phs[j] = sumPhase[j];
+        }
+        
+        /* Back to Cartesian coordinates */
+        for (j = 0; j < win_size/2; j++) {
+            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
+            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+        }
+        
+        /* Back to Time Domain */
+        rfft((float*)cbuf, win_size/2, FFT_INVERSE);
+        
+        /* Assign to the output */
+        for (j = 0; j < hop_size; j++) {
+            outData[i+j] = pre_win[j + hop_size] + cur_win[j];
+        }
+        
+        /* Move previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] = (j < overlap_samples) ?
+            pre_win[j + hop_size] : 0;
+        }
+        
+        /* Update previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] += cur_win[j];
+        }
+        
+        for (j = 0; j < hop_size; j++)
         {
-            gRover = inFifoLatency;
-            processSampleL();
-            processSampleR();
+            buf[i+j] = buf[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
 }
 
-inline void Shifter::processSampleL()
+void Shifter::processSampleR(float* const buf, const int numSamples) noexcept
 {
-    float tmp, phase;
+    jassert (buf != nullptr);
     
-    for (int i = 0; i < WINDOW_SIZE; i++)
+    win_size = numSamples/4;
+    hop_size = win_size/4;
+    overlap = (win_size - hop_size) / (float)win_size;
+    overlap_samples = overlap * win_size;
+    
+    float tmp;
+    int i, j, index;
+    
+    if (stereoStatus == false)
     {
-        window = -0.5f * cosf(2. * M_PI * (float)i/(float)WINDOW_SIZE) + 0.5f;
-        fftData[i*2] = inFifoL[i] * window;
-        fftData[i*2+1] = 0.;
+        initArrays();
+        stereoStatus = true;
     }
     
-    stft(fftData, WINDOW_SIZE, -1);
-    
-    for (int i = 0; i <= frameSize; i++)
+    for (i = 0; i < numSamples; i += hop_size)
     {
-        re = fftData[i*2];
-        im = fftData[i*2+1];
+        // ANALYSIS
+        /* Apply window to current frame */
+        for (j = 0; j < win_size; j++) {
+            cur_win[j] = buf[i+j];
+        }
+        apply_window(cur_win, win, win_size);
         
-        magn = 2. * sqrt(pow(re,2) + pow(im,2));
-        phase = atan2f(im, re);
+        // Obtain minimum phase by shifting time domain data before taking FFT
+        fftshift(cur_win, win_size);
         
-        tmp = phase - prevPhase[i];
-        prevPhase[i] = phase;
+        /* FFT */
+        rfft(cur_win, win_size/2, FFT_FORWARD );
+        complex *cbuf = (complex *)cur_win;
         
-        tmp -= (float)i*expct;
+        /* Get Magnitude and Phase (polar coordinates) */
+        for (j = 0; j < win_size/2; j++) {
+            cur_mag[j] = cmp_abs(cbuf[j]);
+            cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+        }
         
-        qpd = tmp/M_PI;
-        if (qpd >= 0) qpd += (qpd & 1);
-        else qpd -= (qpd & 1);
-        tmp -= M_PI*(float)qpd;
+        for (j = 0; j < win_size/2; j++) {
+            // Get phase difference
+            tmp = cur_phs[j] - phi[j];
+            phi[j] = cur_phs[j];
+            
+            // Subtract expected phase difference
+            tmp -= om[j];
+            
+            // Map to +/- Pi interval
+            tmp = princarg(tmp);
+            
+            // get deviation from bin freq from the +/- pi interval
+            tmp = osamp * tmp / (2. * M_PI);
+            
+            // compute the k-th partials' true frequency
+            tmp = (float) j * freqPerBin + tmp * freqPerBin;
+            
+            // Store true frequency
+            anaFreq[j] = tmp;
+        }
         
-        tmp = osamp*tmp/(2*M_PI);
-        tmp = (float)i*freqPerBin + tmp*freqPerBin;
+        // PROCESSING
+        memset(synMagn, 0, win_size*sizeof(float));
+        memset(synFreq, 0, win_size*sizeof(float));
+        for (j = 0; j < win_size/2; j++) {
+            index = j * parameters.pitch;
+            if (index < win_size/2) {
+                synMagn[index] += cur_mag[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
+                // This next line should commented, for for some reason it sounds better like this
+                // data->gSynFreq[index] = data->gAnaFreq[j];
+            }
+        }
         
-        anaMagn[i] = magn;
-        anaFreq[i] = tmp;
-    }
-    
-    memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
-    memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
-    
-    for (int i = 0; i <= frameSize; i++)
-    {
-        idx = i*parameters.pitch;
-        if (idx <= frameSize)
+        // SYNTHESIS
+        for (j = 0; j < win_size/2; j++) {
+            /* get magnitude and true frequency from synthesis arrays */
+            cur_mag[j] = synMagn[j];
+            
+            /* subtract bin mid frequency */
+            tmp = synFreq[j] - (float)j * freqPerBin;
+            
+            /* get bin deviation from freq deviation */
+            tmp /= freqPerBin;
+            
+            /* take osamp into account */
+            tmp = 2. * M_PI * tmp / (float)osamp;
+            
+            /* add the overlap phase advance back in */
+            tmp += om[j];
+            
+            // accumulate delta phase to get bin phase
+            sumPhase[j] += tmp;
+            cur_phs[j] = sumPhase[j];
+        }
+        
+        /* Back to Cartesian coordinates */
+        for (j = 0; j < win_size/2; j++) {
+            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
+            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+        }
+        
+        /* Back to Time Domain */
+        rfft((float*)cbuf, win_size/2, FFT_INVERSE);
+        
+        /* Assign to the output */
+        for (j = 0; j < hop_size; j++) {
+            outData[i+j] = pre_win[j + hop_size] + cur_win[j];
+        }
+        
+        /* Move previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] = (j < overlap_samples) ?
+            pre_win[j + hop_size] : 0;
+        }
+        
+        /* Update previous window */
+        for (j = 0; j < win_size; j++) {
+            pre_win[j] += cur_win[j];
+        }
+        
+        for (j = 0; j < hop_size; j++)
         {
-            synMagn[idx] += anaMagn[i];
-            synFreq[idx] = anaFreq[i] * parameters.pitch;
+            buf[i+j] = buf[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
-    
-    for (int i = 0; i <= frameSize; i++)
-    {
-        magn = synMagn[i];
-        tmp = synFreq[i];
-        
-        tmp -= (float)i*freqPerBin;
-        
-        tmp /= freqPerBin;
-        
-        tmp = 2. * M_PI * tmp / osamp;
-        
-        tmp += (float)i*expct;
-        
-        sumPhase[i] += tmp;
-        phase = sumPhase[i];
-        
-        fftData[i*2]    = magn * cosf(phase);
-        fftData[i*2+1]  = magn * sinf(phase);
-    }
-    
-    for (int i = WINDOW_SIZE+2; i < WINDOW_SIZE*2; i++) fftData[i] = 0.;
-    
-    stft(fftData, WINDOW_SIZE, 1);
-    
-    for (int i = 0; i < WINDOW_SIZE; i++)
-    {
-        window = -0.5f * cosf(2.*M_PI*(float)i/(float)WINDOW_SIZE) + 0.5f;
-        outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
-        if (isnan(outData[i])) outData[i] = 0;
-    }
-    
-    for (int i = 0; i < stepSize; i++) outFifoL[i] = outData[i];
-    
-    memmove(outData, outData+stepSize, WINDOW_SIZE*sizeof(float));
-    
-    for (int i = 0; i < inFifoLatency; i++) inFifoL[i] = inFifoL[i+stepSize];
-}
-
-inline void Shifter::processSampleR()
-{
-    float tmp, phase;
-    
-    for (int i = 0; i < WINDOW_SIZE; i++)
-    {
-        window = -0.5f * cosf(2. * M_PI * (float)i/(float)WINDOW_SIZE) + 0.5f;
-        fftData[i*2] = inFifoR[i] * window;
-        fftData[i*2+1] = 0.;
-    }
-    
-    stft(fftData, WINDOW_SIZE, -1);
-    
-    for (int i = 0; i <= frameSize; i++)
-    {
-        re = fftData[i*2];
-        im = fftData[i*2+1];
-        
-        magn = 2. * sqrt(pow(re,2) + pow(im,2));
-        phase = atan2f(im, re);
-        
-        tmp = phase - prevPhase[i];
-        prevPhase[i] = phase;
-        
-        tmp -= (float)i*expct;
-        
-        qpd = tmp/M_PI;
-        if (qpd >= 0) qpd += (qpd & 1);
-        else qpd -= (qpd & 1);
-        tmp -= M_PI*(float)qpd;
-        
-        tmp = osamp*tmp/(2*M_PI);
-        tmp = (float)i*freqPerBin + tmp*freqPerBin;
-        
-        anaMagn[i] = magn;
-        anaFreq[i] = tmp;
-    }
-    
-    memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
-    memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
-    
-    for (int i = 0; i <= frameSize; i++)
-    {
-        idx = i*parameters.pitch;
-        if (idx <= frameSize)
-        {
-            synMagn[idx] += anaMagn[i];
-            synFreq[idx] = anaFreq[i] * parameters.pitch;
-        }
-    }
-    
-    for (int i = 0; i <= frameSize; i++)
-    {
-        magn = synMagn[i];
-        tmp = synFreq[i];
-        
-        tmp -= (float)i*freqPerBin;
-        
-        tmp /= freqPerBin;
-        
-        tmp = 2. * M_PI * tmp / osamp;
-        
-        tmp += (float)i*expct;
-        
-        sumPhase[i] += tmp;
-        phase = sumPhase[i];
-        
-        fftData[i*2]    = magn * cosf(phase);
-        fftData[i*2+1]  = magn * sinf(phase);
-    }
-    
-    for (int i = WINDOW_SIZE+2; i < WINDOW_SIZE*2; i++) fftData[i] = 0.;
-    
-    stft(fftData, WINDOW_SIZE, 1);
-    
-    for (int i = 0; i < WINDOW_SIZE; i++)
-    {
-        window = -0.5f * cosf(2.*M_PI*(float)i/(float)WINDOW_SIZE) + 0.5f;
-        outData[i] += 2.*window*fftData[i*2]/(frameSize*osamp);
-        if (isnan(outData[i])) outData[i] = 0;
-    }
-    
-    for (int i = 0; i < stepSize; i++) outFifoR[i] = outData[i];
-    
-    memmove(outData, outData+stepSize, WINDOW_SIZE*sizeof(float));
-    
-    for (int i = 0; i < inFifoLatency; i++) inFifoR[i] = inFifoR[i+stepSize];
 }

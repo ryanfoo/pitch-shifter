@@ -11,9 +11,10 @@
 
 // #include <stdio.h>
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             256    // 2048
+#define WINDOW_SIZE             128    // 2048
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -62,16 +63,20 @@ public:
     void processStereo(float* const left, float* const right, const int numSamples) noexcept;
     
     // Process Left Channel
-    void processSampleL();
+    void processSampleL(float* const buf, const int numSamples) noexcept;
     
     // Process Right Channel
-    void processSampleR();
+    void processSampleR(float* const buf, const int numSamples) noexcept;
 
+    int win_size, hop_size;
+    
+    float cur_win[WINDOW_SIZE], pre_win[WINDOW_SIZE], om[WINDOW_SIZE/2], phi[WINDOW_SIZE/2], win[WINDOW_SIZE], cur_phs[WINDOW_SIZE/2], cur_mag[WINDOW_SIZE/2];
+    
     float inFifoL[WINDOW_SIZE], inFifoR[WINDOW_SIZE], outFifoL[WINDOW_SIZE], outFifoR[WINDOW_SIZE],
           fftData[WINDOW_SIZE*2], prevPhase[WINDOW_SIZE/2+1], sumPhase[WINDOW_SIZE/2+1], outData[WINDOW_SIZE*2],
           anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
     
-    float magn, window, re, im, freqPerBin, expct;
+    float magn, /*window, re, im, */freqPerBin, expct, overlap, overlap_samples;
     
     long gRover = 0, osamp, qpd, idx, inFifoLatency, stepSize, frameSize;
     
