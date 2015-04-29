@@ -68,9 +68,9 @@ public:
     
     // Variables
     float mixVal = 0.5f;
-    int pitchVal = 12;
+    float pitchVal = 1.0f;
     float lpVal = 0.0f;
-    float hpVal = 0.0f;
+    float hpVal = 20000.0f;
     // GUI Update
     void updateShifter(void);
     void updateLPFilter(void);
