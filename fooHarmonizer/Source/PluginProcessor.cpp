@@ -188,8 +188,8 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         // Pitch Shifting processing
         shifter.processMono(monoChannel, buffer.getNumSamples());
         // Filter processing
-        lpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
-        hpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
+//        lpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
+//        hpassFilterL.processSamples(monoChannel, buffer.getNumSamples());
     }
     else if (getNumInputChannels() == 2)
     {
@@ -201,10 +201,10 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         shifter.processSampleL(leftChannel, buffer.getNumSamples());
         shifter.processSampleR(rightChannel, buffer.getNumSamples());
         // Filter processing
-        lpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
-        lpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
-        hpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
-        hpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
+//        lpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+//        lpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
+//        hpassFilterL.processSamples(leftChannel, buffer.getNumSamples());
+//        hpassFilterR.processSamples(rightChannel, buffer.getNumSamples());
     }
 }
 
