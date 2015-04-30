@@ -109,12 +109,12 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
         monoStatus = true;
     }
     
-//    // Bypass pitch shifter
-//    if (parameters.pitch == 1.0)
-//    {
-//        samples[i] = samples[i] * 0.5;
-//        return;
-//    }
+    // Bypass pitch shifter
+    if (parameters.pitch == 1.0)
+    {
+        samples[i] = samples[i] * 0.5;
+        return;
+    }
     
     // Process our samples
     for (i = 0; i < numSamples; i += HOP_SIZE)
@@ -247,18 +247,18 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
     float tmp;
     
     // Init our arrays upon start-up
-    if (monoStatus == false)
+    if (stereoStatus == false)
     {
         initArrays();
-        monoStatus = true;
+        stereoStatus = true;
     }
     
-    //    // Bypass pitch shifter
-    //    if (parameters.pitch == 1.0)
-    //    {
-    //        samples[i] = samples[i] * 0.5;
-    //        return;
-    //    }
+    // Bypass pitch shifter
+    if (parameters.pitch == 1.0)
+    {
+        samples[i] = samples[i] * 0.5;
+        return;
+    }
     
     // Process our samples
     for (i = 0; i < numSamples; i += HOP_SIZE)
@@ -389,18 +389,18 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
     float tmp;
     
     // Init our arrays upon start-up
-    if (monoStatus == false)
+    if (stereoStatus == false)
     {
         initArrays();
-        monoStatus = true;
+        stereoStatus = true;
     }
     
-    //    // Bypass pitch shifter
-    //    if (parameters.pitch == 1.0)
-    //    {
-    //        samples[i] = samples[i] * 0.5;
-    //        return;
-    //    }
+    // Bypass pitch shifter
+    if (parameters.pitch == 1.0)
+    {
+        samples[i] = samples[i] * 0.5;
+        return;
+    }
     
     // Process our samples
     for (i = 0; i < numSamples; i += HOP_SIZE)
