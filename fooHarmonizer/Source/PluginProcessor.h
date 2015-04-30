@@ -71,6 +71,8 @@ public:
     float pitchVal = 1.0f;
     float lpVal = 20000.0f;
     float hpVal = 0.0f;
+    int order = 0;
+    int filter = 1;
     // GUI Update
     void updateShifter(void);
     void updateLPFilter(void);

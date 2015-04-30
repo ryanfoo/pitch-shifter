@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             /*16384*/            128
+#define WINDOW_SIZE             16384               // 128
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -32,13 +32,17 @@ public:
         : pitch(1.0f),
         lpf(20000.0f),
         hpf(0.0f),
-        mix(0.50f)
+        mix(0.50f),
+        order(0),
+        filter(1)
         {}
         
         float pitch;
         float lpf;
         float hpf;
         float mix;
+        int order;
+        int filter;
     };
     
     // Get parameters

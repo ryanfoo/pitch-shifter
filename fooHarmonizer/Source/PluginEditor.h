@@ -18,7 +18,7 @@
 //==============================================================================
 /**
  */
-class FooHarmonizerAudioProcessorEditor: public AudioProcessorEditor, private Slider::Listener
+class FooHarmonizerAudioProcessorEditor: public AudioProcessorEditor, private Slider::Listener, public Button::Listener
 {
 public:
     FooHarmonizerAudioProcessorEditor (FooHarmonizerAudioProcessor&);
@@ -28,7 +28,10 @@ public:
     void paint (Graphics&) override;
     void resized() override;
     // Slider Listener (dynamic interaction)
-    void sliderValueChanged(Slider* slider) ;
+    void sliderValueChanged(Slider* slider);
+    // Button Listeners
+    void buttonClicked (Button* button);
+    void buttonStateChanged (Button* button);
     
 private:
     // This reference is provided as a quick way for your editor to
@@ -50,6 +53,9 @@ private:
     Label pitchText;
     Label lowpassText;
     Label highpassText;
+    
+    TextButton filterButton;
+    TextButton orderButton;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FooHarmonizerAudioProcessorEditor)
 };

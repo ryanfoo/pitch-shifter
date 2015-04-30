@@ -48,18 +48,34 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (500, 500);
+    setSize (400, 300);
     
     // Create Sliders
     createSlider(mixSlider, Slider::Rotary, processor.mixVal, 0.0, 1.0f, 0.01f, "Mix");
     createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, 0.01, 4.0, 0.1, "Semitone");
-    createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0.0, 20000, 10, "Lowpass Filter");
-    createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0.0, 20000, 10, "Highpass Filter");
+    createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0.0, 20000.0, 10, "Lowpass Filter");
+    createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0.0, 20000.0, 10, "Highpass Filter");
+    
     // Create Labels
     createLabel(mixText, "Mix");
     createLabel(pitchText, "Semitone");
     createLabel(lowpassText, "LP Filter");
     createLabel(highpassText, "HP Filter");
+
+    // Filter Button
+    filterButton.setEnabled(true);
+    filterButton.setSize(75, 25);
+    filterButton.setButtonText("Filter Off");
+    filterButton.setComponentID("Filter");
+    filterButton.addListener(this);
+    addAndMakeVisible(filterButton);
+    // Chain Order Button
+    orderButton.setEnabled(true);
+    orderButton.setSize(75, 25);
+    orderButton.setButtonText("LPF->HPF");
+    orderButton.setComponentID("Order");
+    orderButton.addListener(this);
+    addAndMakeVisible(orderButton);
 }
 
 FooHarmonizerAudioProcessorEditor::~FooHarmonizerAudioProcessorEditor()
@@ -70,14 +86,14 @@ FooHarmonizerAudioProcessorEditor::~FooHarmonizerAudioProcessorEditor()
 void FooHarmonizerAudioProcessorEditor::paint (Graphics& g)
 {
     // Background
-    g.fillAll (Colours::white);
+    g.fillAll (Colours::lightgreen);
     
     // Texts and Line Graph
     g.setColour (Colours::black);
     g.setFont (40.0f);
-    g.drawFittedText ("Foo Harmonizer", getLocalBounds(), Justification::centredTop, 1);
+    g.drawFittedText ("Foo Harmonizer", getLocalBounds(), Justification::bottomLeft, 1);
     g.setFont(25.0f);
-    g.drawFittedText("by Ryan Foo", getLocalBounds(), Justification::centredBottom, 2);
+    g.drawFittedText("by Ryan Foo", getLocalBounds(), Justification::bottomRight, 2);
     
     // Backgrounds
     g.setColour(Colours::grey);
@@ -89,16 +105,20 @@ void FooHarmonizerAudioProcessorEditor::resized()
     // subcomponents in your editor..
     
     // Set bounds for sliders
-    mixSlider.setBounds(100, 125, 50, 50);
-    pitchSlider.setBounds(350, 125, 50, 50);
-    lowpassSlider.setBounds(100, 375, 50, 50);
-    highpassSlider.setBounds(350, 375, 50, 50);
+    mixSlider.setBounds(90, 50, 50, 50);
+    pitchSlider.setBounds(270, 50, 50, 50);
+    lowpassSlider.setBounds(90, 150, 50, 50);
+    highpassSlider.setBounds(270, 150, 50, 50);
     
     // Set bounds for texts
-    mixText.setBounds(100, 180, 10, 10);
-    pitchText.setBounds(350, 180, 10, 10);
-    lowpassText.setBounds(100, 430, 50, 10);
-    highpassText.setBounds(350, 430, 50, 10);
+    mixText.setBounds(98, 105, 10, 10);
+    pitchText.setBounds(270, 105, 10, 10);
+    lowpassText.setBounds(90, 215, 50, 10);
+    highpassText.setBounds(270, 215, 50, 10);
+    
+    // Set bounds for buttons
+    filterButton.setBounds(170, 160, 75, 75);
+    orderButton.setBounds(170, 200, 75, 75);
 }
 
 // Callback from listener
@@ -117,4 +137,47 @@ void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
         processor.hpVal = slider->getValue();
     }
     processor.updateShifter();
+}
+
+// Button Listeners
+void FooHarmonizerAudioProcessorEditor::buttonClicked (Button* button)
+{
+    if (button->getComponentID() == filterButton.getComponentID())
+    {
+        if (lowpassSlider.isEnabled())
+        {
+            filterButton.setButtonText("Filter On");
+            lowpassSlider.setEnabled(false);
+            highpassSlider.setEnabled(false);
+            orderButton.setEnabled(false);
+            processor.filter = 0;
+        }
+        else
+        {
+            filterButton.setButtonText("Filter Off");
+            lowpassSlider.setEnabled(true);
+            highpassSlider.setEnabled(true);
+            orderButton.setEnabled(true);
+            processor.filter = 1;
+        }
+    }
+    else
+    {
+        if (orderButton.getButtonText() == "LPF->HPF")
+        {
+            orderButton.setButtonText("LPF<-HPF");
+            processor.order = 1;
+        }
+        else
+        {
+            orderButton.setButtonText("LPF->HPF");
+            processor.order = 0;
+        }
+    }
+    processor.updateShifter();
+}
+
+void FooHarmonizerAudioProcessorEditor::buttonStateChanged (Button* button)
+{
+    
 }

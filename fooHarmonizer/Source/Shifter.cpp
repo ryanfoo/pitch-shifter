@@ -216,7 +216,7 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
             samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
-    processFilters(samples, numSamples);
+    if (parameters.filter) processFilters(samples, numSamples);
 }
 
 // Process Left Channel Stereo Data
@@ -345,7 +345,7 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
             samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
-    processFilters(samples, numSamples);
+    if (parameters.filter) processFilters(samples, numSamples);
 }
 
 // Process Right Channel Stereo
@@ -474,7 +474,7 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
             samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
         }
     }
-    processFilters(samples, numSamples);
+    if (parameters.filter) processFilters(samples, numSamples);
 }
 
 // Updates Lowpass Filter's Parameters
@@ -494,6 +494,15 @@ void Shifter::updateHPFilter(void)
 void Shifter::processFilters(float* const samples, const int numSamples)
 {
     updateLPFilter();
-    lpassFilter.processSamples(samples, numSamples);
-    hpassFilter.processSamples(samples, numSamples);
+    updateHPFilter();
+    if (!parameters.order)
+    {
+        lpassFilter.processSamples(samples, numSamples);
+        hpassFilter.processSamples(samples, numSamples);
+    }
+    else
+    {
+        hpassFilter.processSamples(samples, numSamples);
+        lpassFilter.processSamples(samples, numSamples);
+    }
 }
