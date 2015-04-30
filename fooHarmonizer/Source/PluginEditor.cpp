@@ -52,7 +52,7 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     
     // Create Sliders
     createSlider(mixSlider, Slider::Rotary, processor.mixVal, 0.0, 1.0f, 0.01f, "Mix");
-    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, -12, 12, 0.5, "Semitone");
+    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, 0.01, 4.0, 0.1, "Semitone");
     createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0.0, 20000, 10, "Lowpass Filter");
     createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0.0, 20000, 10, "Highpass Filter");
     // Create Labels
@@ -116,6 +116,5 @@ void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
     else if (slider->getComponentID().compare("Highpass Filter") == 0) {
         processor.hpVal = slider->getValue();
     }
-    
     processor.updateShifter();
 }

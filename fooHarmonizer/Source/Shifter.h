@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             8192
+#define WINDOW_SIZE             /*16384*/            128
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -30,12 +30,12 @@ public:
     {
         Parameters() noexcept
         : pitch(1.0f),
-        lpf(0.0f),
-        hpf(20000.0f),
+        lpf(20000.0f),
+        hpf(0.0f),
         mix(0.50f)
         {}
         
-        int pitch;
+        float pitch;
         float lpf;
         float hpf;
         float mix;
@@ -59,16 +59,21 @@ public:
     // Process Mono
     void processMono(float* const samples, const int numSamples) noexcept;
     
-    void processStereo(float* const left, float* const right, const int numSamples) noexcept;
-    
     // Process Left Channel
-    void processSampleL(float* const buf, const int numSamples) noexcept;
+    void processSampleL(float* const samples, const int numSamples) noexcept;
     
     // Process Right Channel
-    void processSampleR(float* const buf, const int numSamples) noexcept;
+    void processSampleR(float* const samples, const int numSamples) noexcept;
     
-    void processChannel(float* const ch, const int numSamples);
+    // Update Lowpass Filter's Parameters
+    void updateLPFilter(void);
     
+    // Updates Highpass Filter's Parameters
+    void updateHPFilter(void);
+    
+    // Process Filters
+    void processFilters(float* const samples, const int numSamples);
+        
     float cur_win[WINDOW_SIZE], pre_win[WINDOW_SIZE], om[WINDOW_SIZE/2], phi[WINDOW_SIZE/2], win[WINDOW_SIZE], cur_phs[WINDOW_SIZE/2], cur_mag[WINDOW_SIZE/2], prevPhase[WINDOW_SIZE/2+1], sumPhase[WINDOW_SIZE/2+1], outData[WINDOW_SIZE*2], anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
     
     float magn, freqPerBin, expct, overlap, overlap_samples;
@@ -86,6 +91,8 @@ private:
     Parameters parameters;
     // Pitch shifter's sample rate
     double currentSampleRate;
+    // Filters
+    IIRFilter lpassFilter, hpassFilter;
 };
 
 

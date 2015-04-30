@@ -69,8 +69,8 @@ public:
     // Variables
     float mixVal = 0.5f;
     float pitchVal = 1.0f;
-    float lpVal = 0.0f;
-    float hpVal = 20000.0f;
+    float lpVal = 20000.0f;
+    float hpVal = 0.0f;
     // GUI Update
     void updateShifter(void);
     void updateLPFilter(void);
@@ -79,7 +79,7 @@ public:
 private:
     // Audio Filters/Components
     Shifter shifter;
-    IIRFilter lpassFilterL, lpassFilterR, hpassFilterL, hpassFilterR;
+    // IIRFilter lpassFilterL, lpassFilterR, hpassFilterL, hpassFilterR;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FooHarmonizerAudioProcessor)
