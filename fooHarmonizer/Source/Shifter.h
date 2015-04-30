@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             16384               // 128
+#define WINDOW_SIZE             256               // 8192 or 16384 for plugin
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter

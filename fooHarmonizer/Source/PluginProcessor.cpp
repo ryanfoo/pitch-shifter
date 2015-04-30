@@ -132,10 +132,15 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     shifterParams.mix = mixVal;
     shifterParams.lpf = lpVal;
     shifterParams.hpf = hpVal;
+    shifterParams.order = order;
+    shifterParams.filter = filter;
     
     shifter.setParameters(shifterParams);
-    shifter.updateLPFilter();
-    shifter.updateHPFilter();
+    if (shifterParams.filter)
+    {
+        shifter.updateLPFilter();
+        shifter.updateHPFilter();
+    }
 }
 
 //==============================================================================
