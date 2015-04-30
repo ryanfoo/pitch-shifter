@@ -44,16 +44,19 @@ private:
     // Create Label function
     void createLabel(Label &label, std::string name);
     
+    // Slider variables
     Slider mixSlider;
     Slider pitchSlider;
     Slider lowpassSlider;
     Slider highpassSlider;
     
+    // Text Label variables
     Label mixText;
     Label pitchText;
     Label lowpassText;
     Label highpassText;
     
+    // Button variables
     TextButton filterButton;
     TextButton orderButton;
     

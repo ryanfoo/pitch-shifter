@@ -34,6 +34,7 @@ void FooHarmonizerAudioProcessorEditor::createSlider(Slider &slider, Slider::Sli
 // Creates a label with customized params
 void FooHarmonizerAudioProcessorEditor::createLabel(Label &label, std::string name)
 {
+    // Define Label parameters
     label.setSize(50,20);
     label.setEnabled(true);
     label.setText(name, dontSendNotification);
@@ -52,7 +53,7 @@ FooHarmonizerAudioProcessorEditor::FooHarmonizerAudioProcessorEditor (FooHarmoni
     
     // Create Sliders
     createSlider(mixSlider, Slider::Rotary, processor.mixVal, 0.0, 1.0f, 0.01f, "Mix");
-    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, 0.01, 4.0, 0.1, "Semitone");
+    createSlider(pitchSlider, Slider::Rotary, processor.pitchVal, 0.1, 4.0, 0.1, "Semitone");
     createSlider(lowpassSlider, Slider::Rotary, processor.lpVal, 0.0, 20000.0, 10, "Lowpass Filter");
     createSlider(highpassSlider, Slider::Rotary, processor.hpVal, 0.0, 20000.0, 10, "Highpass Filter");
     
@@ -121,9 +122,10 @@ void FooHarmonizerAudioProcessorEditor::resized()
     orderButton.setBounds(170, 200, 75, 75);
 }
 
-// Callback from listener
+// Slider Listener Callback
 void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
+    // Update Parameter Values from Sliders
     if (slider->getComponentID().compare("Mix") == 0) {
         processor.mixVal = slider->getValue();
     }
@@ -136,14 +138,17 @@ void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
     else if (slider->getComponentID().compare("Highpass Filter") == 0) {
         processor.hpVal = slider->getValue();
     }
+    // Update the Pitch Shifter Parameters
     processor.updateShifter();
 }
 
-// Button Listeners
+// Button Listener Callback
 void FooHarmonizerAudioProcessorEditor::buttonClicked (Button* button)
 {
-    if (button->getComponentID() == filterButton.getComponentID())
+    // Update Parameter Values from Buttons
+    if (button->getComponentID().compare("Filter"))
     {
+        // Enable (or disable) the filter sliders
         if (lowpassSlider.isEnabled())
         {
             filterButton.setButtonText("Filter On");
@@ -163,6 +168,7 @@ void FooHarmonizerAudioProcessorEditor::buttonClicked (Button* button)
     }
     else
     {
+        // Switch signal chain order
         if (orderButton.getButtonText() == "LPF->HPF")
         {
             orderButton.setButtonText("LPF<-HPF");
@@ -174,9 +180,11 @@ void FooHarmonizerAudioProcessorEditor::buttonClicked (Button* button)
             processor.order = 0;
         }
     }
+    // Update Pitch Shifter Parameter Values
     processor.updateShifter();
 }
 
+// Button State Listener Callback (Have to add due to virtual void)
 void FooHarmonizerAudioProcessorEditor::buttonStateChanged (Button* button)
 {
     

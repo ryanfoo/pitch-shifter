@@ -126,8 +126,10 @@ void FooHarmonizerAudioProcessor::changeProgramName (int index, const String& ne
 // Updates the Pitch Shifter's Parameters every time a knob is turned
 void FooHarmonizerAudioProcessor::updateShifter(void)
 {
+    // Get Shifter Parameters
     Shifter::Parameters shifterParams = shifter.getParameters();
     
+    // Set Shifter Parameters
     shifterParams.pitch = pitchVal;
     shifterParams.mix = mixVal;
     shifterParams.lpf = lpVal;
@@ -135,7 +137,10 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     shifterParams.order = order;
     shifterParams.filter = filter;
     
+    // Actually set them in parameters struct
     shifter.setParameters(shifterParams);
+    
+    // If filter is on, update the filter values
     if (shifterParams.filter)
     {
         shifter.updateLPFilter();
