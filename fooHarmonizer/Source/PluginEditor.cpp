@@ -146,7 +146,7 @@ void FooHarmonizerAudioProcessorEditor::sliderValueChanged(Slider* slider)
 void FooHarmonizerAudioProcessorEditor::buttonClicked (Button* button)
 {
     // Update Parameter Values from Buttons
-    if (button->getComponentID().compare("Filter"))
+    if (button->getComponentID().compare("Order"))
     {
         // Enable (or disable) the filter sliders
         if (lowpassSlider.isEnabled())

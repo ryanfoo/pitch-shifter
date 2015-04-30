@@ -545,7 +545,6 @@ void Shifter::processFilters(float* const samples, const int numSamples)
         lpassFilter.processSamples(samples, numSamples);
         hpassFilter.processSamples(samples, numSamples);
     }
-    // If LPF<-HPF order selected
     else
     {
         hpassFilter.processSamples(samples, numSamples);
