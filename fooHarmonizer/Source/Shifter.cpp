@@ -493,8 +493,6 @@ void Shifter::updateHPFilter(void)
 
 void Shifter::processFilters(float* const samples, const int numSamples)
 {
-    updateLPFilter();
-    updateHPFilter();
     if (!parameters.order)
     {
         lpassFilter.processSamples(samples, numSamples);
