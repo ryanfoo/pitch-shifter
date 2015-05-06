@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             256               // 256 is good (powers of two...)
+#define WINDOW_SIZE             4096               // 256 is good (powers of two...)
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -60,8 +60,12 @@ public:
     // Clear buffers
     void prepareToPlay();
     
+    // Init arrays
+    void initArrays();
+    void setBuffers();
+    
     // Process Mono
-    void processMono(float* const samples, const int numSamples) noexcept;
+    void processChannel(float* const samples, const int numSamples) noexcept;
     
     // Process Left Channel
     void processSampleL(float* const samples, const int numSamples) noexcept;
@@ -79,7 +83,7 @@ public:
     void processFilters(float* const samples, const int numSamples);
     
     // Arrays to process FFT, Magnitude, Phase
-    float cur_win[WINDOW_SIZE], pre_win[WINDOW_SIZE], om[WINDOW_SIZE/2], phi[WINDOW_SIZE/2], win[WINDOW_SIZE], cur_phs[WINDOW_SIZE/2], cur_mag[WINDOW_SIZE/2], prevPhase[WINDOW_SIZE/2+1], sumPhase[WINDOW_SIZE/2+1], outData[WINDOW_SIZE*2], anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
+    float cur_win[WINDOW_SIZE], pre_win[WINDOW_SIZE], om[WINDOW_SIZE/2], phi[WINDOW_SIZE/2], win[WINDOW_SIZE], cur_phs[WINDOW_SIZE/2], cur_mag[WINDOW_SIZE/2], sumPhase[WINDOW_SIZE/2], outData[WINDOW_SIZE*2], anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
     
     // Variables for processing FFT windows
     float magn, freqPerBin, expct, overlap, overlap_samples;
@@ -93,8 +97,6 @@ public:
 protected:
     
 private:
-    // Init arrays
-    void initArrays();
     // Pitch shifter's parameters
     Parameters parameters;
     // Pitch shifter's sample rate

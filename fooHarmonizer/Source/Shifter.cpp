@@ -65,7 +65,7 @@ void Shifter::initArrays()
     // Set FFT Oversampling Factor - determines the overlap between adjacent STFT frames
     osamp = WINDOW_SIZE/HOP_SIZE;
     // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
-    freqPerBin  = currentSampleRate/WINDOW_SIZE;
+    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     // Apply hanning window to our main window
     hanning(win, WINDOW_SIZE);
     // Zero out previous window
@@ -86,6 +86,11 @@ void Shifter::initArrays()
         win[i] *= 2. / osamp;
     }
     
+    setBuffers();
+}
+
+void Shifter::setBuffers()
+{
     // Zero out buffers
     memset(phi, 0, WINDOW_SIZE/2*sizeof(float));
     memset(sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
@@ -93,7 +98,7 @@ void Shifter::initArrays()
 
 # pragma mark - Mono Channel Processing -
 // Process Mono Data
-void Shifter::processMono(float* const samples, const int numSamples) noexcept
+void Shifter::processChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
@@ -105,7 +110,7 @@ void Shifter::processMono(float* const samples, const int numSamples) noexcept
     // Init our arrays upon start-up
     if (monoStatus == false)
     {
-        initArrays();
+        setBuffers();
         monoStatus = true;
     }
     
@@ -242,7 +247,7 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
     // Init our arrays upon start-up
     if (stereoStatus == false)
     {
-        initArrays();
+        setBuffers();
         stereoStatus = true;
     }
     
@@ -377,7 +382,7 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
     // Init our arrays upon start-up
     if (stereoStatus == false)
     {
-        initArrays();
+        setBuffers();
         stereoStatus = true;
     }
 
