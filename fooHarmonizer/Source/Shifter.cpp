@@ -67,7 +67,7 @@ void Shifter::initArrays()
     // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
     freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     // Apply hanning window to our main window
-    hanning(win, WINDOW_SIZE);
+    blackman(win, WINDOW_SIZE);
     // Zero out previous window
     memset(pre_win, 0, WINDOW_SIZE*sizeof(float));
     // Set Overlap Percentage - # of samples that will overlap
@@ -168,7 +168,7 @@ void Shifter::processChannel(float* const samples, const int numSamples) noexcep
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                synFreq[index] = anaFreq[j];
             }
         }
         
@@ -210,6 +210,9 @@ void Shifter::processChannel(float* const samples, const int numSamples) noexcep
             outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
         }
         
+        // Filter data if filter button is on
+        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
             pre_win[j] = (j < overlap_samples) ?
@@ -229,13 +232,12 @@ void Shifter::processChannel(float* const samples, const int numSamples) noexcep
     }
     
     // Filter data if filter button is on
-    if (parameters.filter) processFilters(samples, numSamples);
+    // if (parameters.filter) processFilters(samples, numSamples);
 }
 
 # pragma mark - Stereo Channel Processing -
-
-// Process Left Channel Stereo Data
-void Shifter::processSampleL(float* const samples, const int numSamples) noexcept
+// Process Mono Data
+void Shifter::processLeftChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
@@ -305,7 +307,7 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                synFreq[index] = anaFreq[j];
             }
         }
         
@@ -347,6 +349,9 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
             outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
         }
         
+        // Filter data if filter button is on
+        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
             pre_win[j] = (j < overlap_samples) ?
@@ -366,11 +371,12 @@ void Shifter::processSampleL(float* const samples, const int numSamples) noexcep
     }
     
     // Filter data if filter button is on
-    if (parameters.filter) processFilters(samples, numSamples);
+    // if (parameters.filter) processFilters(samples, numSamples);
 }
 
-// Process Right Channel Stereo
-void Shifter::processSampleR(float* const samples, const int numSamples) noexcept
+# pragma mark - Mono Channel Processing -
+// Process Mono Data
+void Shifter::processRightChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
@@ -440,7 +446,7 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                synFreq[index] = anaFreq[j];
             }
         }
         
@@ -482,6 +488,9 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
             outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
         }
         
+        // Filter data if filter button is on
+        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
             pre_win[j] = (j < overlap_samples) ?
@@ -501,8 +510,10 @@ void Shifter::processSampleR(float* const samples, const int numSamples) noexcep
     }
     
     // Filter data if filter button is on
-    if (parameters.filter) processFilters(samples, numSamples);
+    // if (parameters.filter) processFilters(samples, numSamples);
 }
+
+
 
 # pragma mark - Filter Processing
 

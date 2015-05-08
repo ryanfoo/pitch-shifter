@@ -68,10 +68,10 @@ public:
     void processChannel(float* const samples, const int numSamples) noexcept;
     
     // Process Left Channel
-    void processSampleL(float* const samples, const int numSamples) noexcept;
+    void processLeftChannel(float* const samples, const int numSamples) noexcept;
     
     // Process Right Channel
-    void processSampleR(float* const samples, const int numSamples) noexcept;
+    void processRightChannel(float* const samples, const int numSamples) noexcept;
     
     // Update Lowpass Filter's Parameters
     void updateLPFilter(void);

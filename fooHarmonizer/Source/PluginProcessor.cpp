@@ -191,8 +191,8 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
         
         // Pitch Shifting processing
-        shifter.processChannel(leftChannel, buffer.getNumSamples());
-        shifter.processChannel(rightChannel, buffer.getNumSamples());
+        shifter.processLeftChannel(leftChannel, buffer.getNumSamples());
+        shifter.processRightChannel(rightChannel, buffer.getNumSamples());
     }
 }
 
