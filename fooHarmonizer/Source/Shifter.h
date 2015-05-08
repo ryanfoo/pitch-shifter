@@ -114,6 +114,8 @@ public:
     // For initializing arrays upon start up
     bool monoStatus = false, stereoStatus = false;
     
+    data monoData, leftData, rightData;
+    
 protected:
     
 private:

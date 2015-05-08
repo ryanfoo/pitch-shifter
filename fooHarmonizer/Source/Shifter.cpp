@@ -70,19 +70,27 @@ void Shifter::initArrays()
     overlap_samples = overlap * WINDOW_SIZE;
     
     // Apply blackman window to our main window
-    blackman(win, WINDOW_SIZE);
+    blackman(monoData.win, WINDOW_SIZE);
+    blackman(leftData.win, WINDOW_SIZE);
+    blackman(rightData.win, WINDOW_SIZE);
     // Zero out previous window
-    memset(pre_win, 0, WINDOW_SIZE*sizeof(float));
+    memset(monoData.pre_win, 0, WINDOW_SIZE*sizeof(float));
+    memset(leftData.pre_win, 0, WINDOW_SIZE*sizeof(float));
+    memset(rightData.pre_win, 0, WINDOW_SIZE*sizeof(float));
     
     // Set expected omega frequency values
     for (int i = 0; i < WINDOW_SIZE/2; i++)
     {
-        om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
+        monoData.om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
+        leftData.om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
+        rightData.om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
     }
     // Scale window for overlap add
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
-        win[i] *= 2. / osamp;
+        monoData.win[i] *= 2. / osamp;
+        leftData.win[i] *= 2. / osamp;
+        rightData.win[i] *= 2. / osamp;
     }
     
     setBuffers();
@@ -91,8 +99,12 @@ void Shifter::initArrays()
 void Shifter::setBuffers()
 {
     // Zero out buffers
-    memset(phi, 0, WINDOW_SIZE/2*sizeof(float));
-    memset(sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(monoData.phi, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(monoData.sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(leftData.phi, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(leftData.sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(rightData.phi, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(rightData.sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
 }
 
 # pragma mark - Mono Channel Processing -
@@ -126,32 +138,32 @@ inline void Shifter::processChannel(float* const samples, const int numSamples) 
     {
 # pragma mark - Analysis
         // Set our incoming samples to the current stft window
-        for (j = 0; j < WINDOW_SIZE; j++) cur_win[j] = samples[i+j];
+        for (j = 0; j < WINDOW_SIZE; j++) monoData.cur_win[j] = samples[i+j];
         // Applies a hanning window to data
-        apply_window(cur_win, win, WINDOW_SIZE);
+        apply_window(monoData.cur_win, monoData.win, WINDOW_SIZE);
         
         // Obtain minimum phase by shifting time domain data before taking FFT
-        fftshift(cur_win, WINDOW_SIZE);
+        fftshift(monoData.cur_win, WINDOW_SIZE);
         
 # pragma mark - FFT/Convert to Magnitudes + Phases
         // FFT real values (Convert to frequency domain)
-        rfft(cur_win, WINDOW_SIZE/2, FFT_FORWARD);
+        rfft(monoData.cur_win, WINDOW_SIZE/2, FFT_FORWARD);
         // Get real and imaginary #s of the FFT'd window
-        complex *cbuf = (complex *)cur_win;
+        complex *cbuf = (complex *)monoData.cur_win;
         
         // Get Magnitude and Phase (polar coordinates)
         for (j = 0; j < WINDOW_SIZE/2; j++) {
-            cur_mag[j] = cmp_abs(cbuf[j]);
-            cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+            monoData.cur_mag[j] = cmp_abs(cbuf[j]);
+            monoData.cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
         }
         // Get frequencies of FFT'd signal (analysis stage)
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // Get phase difference
-            tmp = cur_phs[j] - phi[j];
-            phi[j] = cur_phs[j];
+            tmp = monoData.cur_phs[j] - monoData.phi[j];
+            monoData.phi[j] = monoData.cur_phs[j];
             
             // Subtract expected phase difference
-            tmp -= om[j];
+            tmp -= monoData.om[j];
             
             // Map to +/- Pi interval
             tmp = princarg(tmp);
@@ -163,19 +175,19 @@ inline void Shifter::processChannel(float* const samples, const int numSamples) 
             tmp = (float) j * freqPerBin + tmp * freqPerBin;
             
             // Store true frequency
-            anaFreq[j] = tmp;
+            monoData.anaFreq[j] = tmp;
         }
         
 # pragma mark - Processing
         // Zero our processing buffers
-        memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
-        memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
+        memset(monoData.synMagn, 0, WINDOW_SIZE*sizeof(float));
+        memset(monoData.synFreq, 0, WINDOW_SIZE*sizeof(float));
         // Set new frequencies according to our pitch value
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
-                synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                monoData.synMagn[index] += monoData.cur_mag[j];
+                monoData.synFreq[index] = monoData.anaFreq[j] * parameters.pitch;
             }
         }
         
@@ -183,10 +195,10 @@ inline void Shifter::processChannel(float* const samples, const int numSamples) 
         // Write our new magnitudes and phases
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // get magnitude and true frequency from synthesis arrays
-            cur_mag[j] = synMagn[j];
+            monoData.cur_mag[j] = monoData.synMagn[j];
             
             // subtract bin mid frequency
-            tmp = synFreq[j] - (float)j * freqPerBin;
+            tmp = monoData.synFreq[j] - (float)j * freqPerBin;
             
             // get bin deviation from freq deviation
             tmp /= freqPerBin;
@@ -195,17 +207,17 @@ inline void Shifter::processChannel(float* const samples, const int numSamples) 
             tmp = 2. * M_PI * tmp / (float)osamp;
             
             // add the overlap phase advance back in
-            tmp += om[j];
+            tmp += monoData.om[j];
             
             // accumulate delta phase to get bin phase
-            sumPhase[j] += tmp;
-            cur_phs[j] = sumPhase[j];
+            monoData.sumPhase[j] += tmp;
+            monoData.cur_phs[j] = monoData.sumPhase[j];
         }
         
         // Back to Cartesian coordinates
         for (j = 0; j < WINDOW_SIZE/2; j++) {
-            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
-            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+            cbuf[j].re = monoData.cur_mag[j] * cosf(monoData.cur_phs[j]);
+            cbuf[j].im = monoData.cur_mag[j] * sinf(monoData.cur_phs[j]);
         }
         
         // FFT back to time domain signal
@@ -214,27 +226,27 @@ inline void Shifter::processChannel(float* const samples, const int numSamples) 
 # pragma mark - Output
         // Write to output
         for (j = 0; j < HOP_SIZE; j++) {
-            outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
+            monoData.outData[i+j] = monoData.pre_win[j + HOP_SIZE] + monoData.cur_win[j];
         }
         
         // Filter data if filter button is on
-        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        if (parameters.filter) processFilters(monoData.outData, HOP_SIZE);
         
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] = (j < overlap_samples) ?
-            pre_win[j + HOP_SIZE] : 0;
+            monoData.pre_win[j] = (j < overlap_samples) ?
+            monoData.pre_win[j + HOP_SIZE] : 0;
         }
         
         // Update previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] += cur_win[j];
+            monoData.pre_win[j] += monoData.cur_win[j];
         }
         
         // Combine input data with output data
         for (j = 0; j < HOP_SIZE; j++)
         {
-            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
+            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + monoData.outData[i+j] * parameters.mix;
         }
     }
     
@@ -275,32 +287,32 @@ inline void Shifter::processLeftChannel(float* const samples, const int numSampl
     {
 # pragma mark - Analysis
         // Set our incoming samples to the current stft window
-        for (j = 0; j < WINDOW_SIZE; j++) cur_win[j] = samples[i+j];
+        for (j = 0; j < WINDOW_SIZE; j++) leftData.cur_win[j] = samples[i+j];
             // Applies a hanning window to data
-            apply_window(cur_win, win, WINDOW_SIZE);
+            apply_window(leftData.cur_win, leftData.win, WINDOW_SIZE);
             
             // Obtain minimum phase by shifting time domain data before taking FFT
-            fftshift(cur_win, WINDOW_SIZE);
+            fftshift(leftData.cur_win, WINDOW_SIZE);
             
 # pragma mark - FFT/Convert to Magnitudes + Phases
             // FFT real values (Convert to frequency domain)
-            rfft(cur_win, WINDOW_SIZE/2, FFT_FORWARD);
+            rfft(leftData.cur_win, WINDOW_SIZE/2, FFT_FORWARD);
             // Get real and imaginary #s of the FFT'd window
-            complex *cbuf = (complex *)cur_win;
+            complex *cbuf = (complex *)leftData.cur_win;
             
             // Get Magnitude and Phase (polar coordinates)
             for (j = 0; j < WINDOW_SIZE/2; j++) {
-                cur_mag[j] = cmp_abs(cbuf[j]);
-                cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+                leftData.cur_mag[j] = cmp_abs(cbuf[j]);
+                leftData.cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
             }
         // Get frequencies of FFT'd signal (analysis stage)
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // Get phase difference
-            tmp = cur_phs[j] - phi[j];
-            phi[j] = cur_phs[j];
+            tmp = leftData.cur_phs[j] - leftData.phi[j];
+            leftData.phi[j] = leftData.cur_phs[j];
             
             // Subtract expected phase difference
-            tmp -= om[j];
+            tmp -= leftData.om[j];
             
             // Map to +/- Pi interval
             tmp = princarg(tmp);
@@ -312,19 +324,19 @@ inline void Shifter::processLeftChannel(float* const samples, const int numSampl
             tmp = (float) j * freqPerBin + tmp * freqPerBin;
             
             // Store true frequency
-            anaFreq[j] = tmp;
+            leftData.anaFreq[j] = tmp;
         }
         
 # pragma mark - Processing
         // Zero our processing buffers
-        memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
-        memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
+        memset(leftData.synMagn, 0, WINDOW_SIZE*sizeof(float));
+        memset(leftData.synFreq, 0, WINDOW_SIZE*sizeof(float));
         // Set new frequencies according to our pitch value
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
-                synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                leftData.synMagn[index] += leftData.cur_mag[j];
+                leftData.synFreq[index] = leftData.anaFreq[j] * parameters.pitch;
             }
         }
         
@@ -332,10 +344,10 @@ inline void Shifter::processLeftChannel(float* const samples, const int numSampl
         // Write our new magnitudes and phases
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // get magnitude and true frequency from synthesis arrays
-            cur_mag[j] = synMagn[j];
+            leftData.cur_mag[j] = leftData.synMagn[j];
             
             // subtract bin mid frequency
-            tmp = synFreq[j] - (float)j * freqPerBin;
+            tmp = leftData.synFreq[j] - (float)j * freqPerBin;
             
             // get bin deviation from freq deviation
             tmp /= freqPerBin;
@@ -347,14 +359,14 @@ inline void Shifter::processLeftChannel(float* const samples, const int numSampl
             tmp += om[j];
             
             // accumulate delta phase to get bin phase
-            sumPhase[j] += tmp;
-            cur_phs[j] = sumPhase[j];
+            leftData.sumPhase[j] += tmp;
+            leftData.cur_phs[j] = leftData.sumPhase[j];
         }
         
         // Back to Cartesian coordinates
         for (j = 0; j < WINDOW_SIZE/2; j++) {
-            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
-            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+            cbuf[j].re = leftData.cur_mag[j] * cosf(leftData.cur_phs[j]);
+            cbuf[j].im = leftData.cur_mag[j] * sinf(leftData.cur_phs[j]);
         }
         
         // FFT back to time domain signal
@@ -363,27 +375,27 @@ inline void Shifter::processLeftChannel(float* const samples, const int numSampl
 # pragma mark - Output
         // Write to output
         for (j = 0; j < HOP_SIZE; j++) {
-            outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
+            leftData.outData[i+j] = leftData.pre_win[j + HOP_SIZE] + leftData.cur_win[j];
         }
         
         // Filter data if filter button is on
-        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        if (parameters.filter) processFilters(leftData.outData, HOP_SIZE);
         
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] = (j < overlap_samples) ?
-            pre_win[j + HOP_SIZE] : 0;
+            leftData.pre_win[j] = (j < overlap_samples) ?
+            leftData.pre_win[j + HOP_SIZE] : 0;
         }
         
         // Update previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] += cur_win[j];
+            leftData.pre_win[j] += leftData.cur_win[j];
         }
         
         // Combine input data with output data
         for (j = 0; j < HOP_SIZE; j++)
         {
-            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
+            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + leftData.outData[i+j] * parameters.mix;
         }
     }
     
@@ -417,32 +429,32 @@ inline void Shifter::processRightChannel(float* const samples, const int numSamp
     {
 # pragma mark - Analysis
         // Set our incoming samples to the current stft window
-        for (j = 0; j < WINDOW_SIZE; j++) cur_win[j] = samples[i+j];
+        for (j = 0; j < WINDOW_SIZE; j++) rightData.cur_win[j] = samples[i+j];
             // Applies a hanning window to data
-            apply_window(cur_win, win, WINDOW_SIZE);
+            apply_window(rightData.cur_win, rightData.win, WINDOW_SIZE);
             
             // Obtain minimum phase by shifting time domain data before taking FFT
-            fftshift(cur_win, WINDOW_SIZE);
+            fftshift(rightData.cur_win, WINDOW_SIZE);
             
 # pragma mark - FFT/Convert to Magnitudes + Phases
             // FFT real values (Convert to frequency domain)
-            rfft(cur_win, WINDOW_SIZE/2, FFT_FORWARD);
+            rfft(rightData.cur_win, WINDOW_SIZE/2, FFT_FORWARD);
             // Get real and imaginary #s of the FFT'd window
-            complex *cbuf = (complex *)cur_win;
+            complex *cbuf = (complex *)rightData.cur_win;
             
             // Get Magnitude and Phase (polar coordinates)
             for (j = 0; j < WINDOW_SIZE/2; j++) {
-                cur_mag[j] = cmp_abs(cbuf[j]);
-                cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
+                rightData.cur_mag[j] = cmp_abs(cbuf[j]);
+                rightData.cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
             }
         // Get frequencies of FFT'd signal (analysis stage)
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // Get phase difference
-            tmp = cur_phs[j] - phi[j];
-            phi[j] = cur_phs[j];
+            tmp = rightData.cur_phs[j] - rightData.phi[j];
+            rightData.phi[j] = rightData.cur_phs[j];
             
             // Subtract expected phase difference
-            tmp -= om[j];
+            tmp -= rightData.om[j];
             
             // Map to +/- Pi interval
             tmp = princarg(tmp);
@@ -454,19 +466,19 @@ inline void Shifter::processRightChannel(float* const samples, const int numSamp
             tmp = (float) j * freqPerBin + tmp * freqPerBin;
             
             // Store true frequency
-            anaFreq[j] = tmp;
+            rightData.anaFreq[j] = tmp;
         }
         
 # pragma mark - Processing
         // Zero our processing buffers
-        memset(synMagn, 0, WINDOW_SIZE*sizeof(float));
-        memset(synFreq, 0, WINDOW_SIZE*sizeof(float));
+        memset(rightData.synMagn, 0, WINDOW_SIZE*sizeof(float));
+        memset(rightData.synFreq, 0, WINDOW_SIZE*sizeof(float));
         // Set new frequencies according to our pitch value
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
-                synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j] * parameters.pitch;
+                rightData.synMagn[index] += rightData.cur_mag[j];
+                rightData.synFreq[index] = rightData.anaFreq[j] * parameters.pitch;
             }
         }
         
@@ -474,10 +486,10 @@ inline void Shifter::processRightChannel(float* const samples, const int numSamp
         // Write our new magnitudes and phases
         for (j = 0; j < WINDOW_SIZE/2; j++) {
             // get magnitude and true frequency from synthesis arrays
-            cur_mag[j] = synMagn[j];
+            rightData.cur_mag[j] = rightData.synMagn[j];
             
             // subtract bin mid frequency
-            tmp = synFreq[j] - (float)j * freqPerBin;
+            tmp = rightData.synFreq[j] - (float)j * freqPerBin;
             
             // get bin deviation from freq deviation
             tmp /= freqPerBin;
@@ -489,14 +501,14 @@ inline void Shifter::processRightChannel(float* const samples, const int numSamp
             tmp += om[j];
             
             // accumulate delta phase to get bin phase
-            sumPhase[j] += tmp;
-            cur_phs[j] = sumPhase[j];
+            rightData.sumPhase[j] += tmp;
+            rightData.cur_phs[j] = rightData.sumPhase[j];
         }
         
         // Back to Cartesian coordinates
         for (j = 0; j < WINDOW_SIZE/2; j++) {
-            cbuf[j].re = cur_mag[j] * cosf(cur_phs[j]);
-            cbuf[j].im = cur_mag[j] * sinf(cur_phs[j]);
+            cbuf[j].re = rightData.cur_mag[j] * cosf(rightData.cur_phs[j]);
+            cbuf[j].im = rightData.cur_mag[j] * sinf(rightData.cur_phs[j]);
         }
         
         // FFT back to time domain signal
@@ -505,27 +517,27 @@ inline void Shifter::processRightChannel(float* const samples, const int numSamp
 # pragma mark - Output
         // Write to output
         for (j = 0; j < HOP_SIZE; j++) {
-            outData[i+j] = pre_win[j + HOP_SIZE] + cur_win[j];
+            rightData.outData[i+j] = rightData.pre_win[j + HOP_SIZE] + rightData.cur_win[j];
         }
         
         // Filter data if filter button is on
-        if (parameters.filter) processFilters(outData, HOP_SIZE);
+        if (parameters.filter) processFilters(rightData.outData, HOP_SIZE);
         
         // Move previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] = (j < overlap_samples) ?
-            pre_win[j + HOP_SIZE] : 0;
+            rightData.pre_win[j] = (j < overlap_samples) ?
+            rightData.pre_win[j + HOP_SIZE] : 0;
         }
         
         // Update previous window
         for (j = 0; j < WINDOW_SIZE; j++) {
-            pre_win[j] += cur_win[j];
+            rightData.pre_win[j] += rightData.cur_win[j];
         }
         
         // Combine input data with output data
         for (j = 0; j < HOP_SIZE; j++)
         {
-            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + outData[i+j] * parameters.mix;
+            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + rightData.outData[i+j] * parameters.mix;
         }
     }
     
