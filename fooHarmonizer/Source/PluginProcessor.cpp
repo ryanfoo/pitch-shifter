@@ -183,7 +183,8 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *monoChannel = buffer.getWritePointer(0);
         
         // Pitch Shifting processing
-        shifter.processChannel(monoChannel, buffer.getNumSamples());
+//        shifter.processChannel(monoChannel, buffer.getNumSamples());
+        shifter.processMono(monoChannel, buffer.getNumSamples());
     }
     else if (getNumInputChannels() == 2)
     {
@@ -191,8 +192,9 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
         
         // Pitch Shifting processing
-        shifter.processLeftChannel(leftChannel, buffer.getNumSamples());
-        shifter.processRightChannel(rightChannel, buffer.getNumSamples());
+//        shifter.processLeftChannel(leftChannel, buffer.getNumSamples());
+//        shifter.processRightChannel(rightChannel, buffer.getNumSamples());
+        shifter.processStereo(leftChannel, rightChannel, buffer.getNumSamples());
     }
 }
 

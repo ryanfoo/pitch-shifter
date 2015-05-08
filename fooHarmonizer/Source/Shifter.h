@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             4096               // 256 is good (powers of two...)
+#define WINDOW_SIZE             4096               // 256 is good (powers of two...) 4096
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -24,6 +24,23 @@ public:
     Shifter();
     // Deconstructor
     ~Shifter();
+
+    typedef struct
+    {
+        float win[WINDOW_SIZE];
+        float cur_win[WINDOW_SIZE];
+        float pre_win[WINDOW_SIZE];
+        float om[WINDOW_SIZE/2];
+        float phi[WINDOW_SIZE/2];
+        float cur_phs[WINDOW_SIZE/2];
+        float cur_mag[WINDOW_SIZE/2];
+        float sumPhase[WINDOW_SIZE/2];
+        float outData[WINDOW_SIZE*2];
+        float anaFreq[WINDOW_SIZE];
+        float anaMagn[WINDOW_SIZE];
+        float synFreq[WINDOW_SIZE];
+        float synMagn[WINDOW_SIZE];
+    } data;
     
     // Struct holds pitch shifter's parameters
     struct Parameters
@@ -63,6 +80,9 @@ public:
     // Init arrays
     void initArrays();
     void setBuffers();
+    
+    void processMono(float* const samples, const int numSamples);
+    void processStereo(float* const left, float* const right, const int numSamples);
     
     // Process Mono
     void processChannel(float* const samples, const int numSamples) noexcept;

@@ -64,16 +64,15 @@ void Shifter::initArrays()
 {
     // Set FFT Oversampling Factor - determines the overlap between adjacent STFT frames
     osamp = WINDOW_SIZE/HOP_SIZE;
-    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
-    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
-    // Apply hanning window to our main window
-    blackman(win, WINDOW_SIZE);
-    // Zero out previous window
-    memset(pre_win, 0, WINDOW_SIZE*sizeof(float));
     // Set Overlap Percentage - # of samples that will overlap
     overlap = (WINDOW_SIZE - HOP_SIZE) / (float)WINDOW_SIZE;
     // Set Overlap Samples - how much overlap there will be between frames
     overlap_samples = overlap * WINDOW_SIZE;
+    
+    // Apply blackman window to our main window
+    blackman(win, WINDOW_SIZE);
+    // Zero out previous window
+    memset(pre_win, 0, WINDOW_SIZE*sizeof(float));
     
     // Set expected omega frequency values
     for (int i = 0; i < WINDOW_SIZE/2; i++)
@@ -97,15 +96,23 @@ void Shifter::setBuffers()
 }
 
 # pragma mark - Mono Channel Processing -
+void Shifter::processMono(float* const samples, const int numSamples)
+{
+    processChannel(samples, numSamples);
+}
+
 // Process Mono Data
-void Shifter::processChannel(float* const samples, const int numSamples) noexcept
+inline void Shifter::processChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
     
     // Init vars
-    int i, j, index;
+    long i, j, index;
     float tmp;
+    
+    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
+    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     
     // Init our arrays upon start-up
     if (monoStatus == false)
@@ -168,7 +175,7 @@ void Shifter::processChannel(float* const samples, const int numSamples) noexcep
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
             }
         }
         
@@ -236,15 +243,25 @@ void Shifter::processChannel(float* const samples, const int numSamples) noexcep
 }
 
 # pragma mark - Stereo Channel Processing -
+
+void Shifter::processStereo(float* const left, float* const right, const int numSamples)
+{
+    processLeftChannel(left, numSamples);
+    processRightChannel(right, numSamples);
+}
+
 // Process Mono Data
-void Shifter::processLeftChannel(float* const samples, const int numSamples) noexcept
+inline void Shifter::processLeftChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
     
     // Init vars
-    int i, j, index;
+    long i, j, index;
     float tmp;
+    
+    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
+    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     
     // Init our arrays upon start-up
     if (stereoStatus == false)
@@ -307,7 +324,7 @@ void Shifter::processLeftChannel(float* const samples, const int numSamples) noe
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
             }
         }
         
@@ -376,14 +393,17 @@ void Shifter::processLeftChannel(float* const samples, const int numSamples) noe
 
 # pragma mark - Mono Channel Processing -
 // Process Mono Data
-void Shifter::processRightChannel(float* const samples, const int numSamples) noexcept
+inline void Shifter::processRightChannel(float* const samples, const int numSamples) noexcept
 {
     // Assert that the samples are not null
     jassert (samples != nullptr);
     
     // Init vars
-    int i, j, index;
+    long i, j, index;
     float tmp;
+    
+    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
+    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     
     // Init our arrays upon start-up
     if (stereoStatus == false)
@@ -446,7 +466,7 @@ void Shifter::processRightChannel(float* const samples, const int numSamples) no
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 synMagn[index] += cur_mag[j];
-                synFreq[index] = anaFreq[j];
+                synFreq[index] = anaFreq[j] * parameters.pitch;
             }
         }
         
