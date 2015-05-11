@@ -15,13 +15,13 @@
 //==============================================================================
 FooHarmonizerAudioProcessor::FooHarmonizerAudioProcessor()
 {
-    shifter.monoData = new Shifter::data();
-    shifter.leftData = new Shifter::data();
-    shifter.rightData = new Shifter::data();
+//    shifter.monoData = new Shifter::data();
+//    shifter.leftData = new Shifter::data();
+//    shifter.rightData = new Shifter::data();
     
-    shifter.initArrays(shifter.monoData);
-    shifter.initArrays(shifter.leftData);
-    shifter.initArrays(shifter.rightData);
+    shifter.initArrays(&shifter.monoData);
+    shifter.initArrays(&shifter.leftData);
+    shifter.initArrays(&shifter.rightData);
 }
 
 FooHarmonizerAudioProcessor::~FooHarmonizerAudioProcessor()

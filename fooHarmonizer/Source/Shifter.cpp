@@ -84,7 +84,7 @@ void Shifter::initArrays(data *dat)
     {
         dat->win[i] *= 2. / osamp;
     }
-    
+        
     setBuffers(dat);
     dat->status = false;
 }
@@ -99,15 +99,15 @@ void Shifter::setBuffers(data *dat)
 # pragma mark - Mono Channel Processing -
 void Shifter::processMono(float* const samples, const int numSamples)
 {
-    processChannel(samples, numSamples, monoData);
+    processChannel(samples, numSamples, &monoData);
 }
 
 # pragma mark - Stereo Channel Processing -
 
 void Shifter::processStereo(float* const left, float* const right, const int numSamples)
 {
-    processChannel(left, numSamples, leftData);
-    processChannel(right, numSamples, rightData);
+    processChannel(left, numSamples, &leftData);
+    processChannel(right, numSamples, &rightData);
 }
 
 // Process Channel Data
@@ -169,7 +169,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             tmp = osamp * tmp / (2. * M_PI);
             
             // compute the k-th partials' true frequency
-            tmp = (float) j * freqPerBin + tmp * freqPerBin;
+            tmp = (long)j * freqPerBin + tmp * freqPerBin;
             
             // Store true frequency
             myData->anaFreq[j] = tmp;
@@ -184,7 +184,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             index = j * parameters.pitch;
             if (index < WINDOW_SIZE/2) {
                 myData->synMagn[index] += myData->cur_mag[j];
-                myData->synFreq[index] = myData->anaFreq[j]; // * parameters.pitch;
+                myData->synFreq[index] = myData->anaFreq[j];// * parameters.pitch;
             }
         }
         
@@ -247,291 +247,6 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
         }
     }
 }
-
-//// Process Mono Data
-//inline void Shifter::processLeftChannel(float* const samples, const int numSamples) noexcept
-//{
-//    // Assert that the samples are not null
-//    jassert (samples != nullptr);
-//    
-//    // Init vars
-//    long i, j, index;
-//    float tmp;
-//    
-//    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
-//    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
-//    
-//    // Init our arrays upon start-up
-//    if (leftStatus == false)
-//    {
-//        setBuffers(leftData);
-//        leftStatus = true;
-//    }
-//    
-//    // Process our samples
-//    for (i = 0; i < numSamples; i += HOP_SIZE)
-//    {
-//# pragma mark - Analysis
-//        // Set our incoming samples to the current stft window
-//        for (j = 0; j < WINDOW_SIZE; j++) leftData.cur_win[j] = samples[i+j];
-//            // Applies a hanning window to data
-//            apply_window(leftData.cur_win, leftData.win, WINDOW_SIZE);
-//            
-//            // Obtain minimum phase by shifting time domain data before taking FFT
-//            fftshift(leftData.cur_win, WINDOW_SIZE);
-//            
-//# pragma mark - FFT/Convert to Magnitudes + Phases
-//            // FFT real values (Convert to frequency domain)
-//            rfft(leftData.cur_win, WINDOW_SIZE/2, FFT_FORWARD);
-//            // Get real and imaginary #s of the FFT'd window
-//            complex *cbuf = (complex *)leftData.cur_win;
-//            
-//            // Get Magnitude and Phase (polar coordinates)
-//            for (j = 0; j < WINDOW_SIZE/2; j++) {
-//                leftData.cur_mag[j] = cmp_abs(cbuf[j]);
-//                leftData.cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
-//            }
-//        // Get frequencies of FFT'd signal (analysis stage)
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            // Get phase difference
-//            tmp = leftData.cur_phs[j] - leftData.phi[j];
-//            leftData.phi[j] = leftData.cur_phs[j];
-//            
-//            // Subtract expected phase difference
-//            tmp -= leftData.om[j];
-//            
-//            // Map to +/- Pi interval
-//            tmp = princarg(tmp);
-//            
-//            // get deviation from bin freq from the +/- pi interval
-//            tmp = osamp * tmp / (2. * M_PI);
-//            
-//            // compute the k-th partials' true frequency
-//            tmp = (float) j * freqPerBin + tmp * freqPerBin;
-//            
-//            // Store true frequency
-//            leftData.anaFreq[j] = tmp;
-//        }
-//        
-//# pragma mark - Processing
-//        // Zero our processing buffers
-//        memset(leftData.synMagn, 0, WINDOW_SIZE*sizeof(float));
-//        memset(leftData.synFreq, 0, WINDOW_SIZE*sizeof(float));
-//        // Set new frequencies according to our pitch value
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            index = j * parameters.pitch;
-//            if (index < WINDOW_SIZE/2) {
-//                leftData.synMagn[index] += leftData.cur_mag[j];
-//                leftData.synFreq[index] = leftData.anaFreq[j] * parameters.pitch;
-//            }
-//        }
-//        
-//# pragma mark - Synthesis
-//        // Write our new magnitudes and phases
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            // get magnitude and true frequency from synthesis arrays
-//            leftData.cur_mag[j] = leftData.synMagn[j];
-//            
-//            // subtract bin mid frequency
-//            tmp = leftData.synFreq[j] - (float)j * freqPerBin;
-//            
-//            // get bin deviation from freq deviation
-//            tmp /= freqPerBin;
-//            
-//            // Factor in overlap factor
-//            tmp = 2. * M_PI * tmp / (float)osamp;
-//            
-//            // add the overlap phase advance back in
-//            tmp += om[j];
-//            
-//            // accumulate delta phase to get bin phase
-//            leftData.sumPhase[j] += tmp;
-//            leftData.cur_phs[j] = leftData.sumPhase[j];
-//        }
-//        
-//        // Back to Cartesian coordinates
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            cbuf[j].re = leftData.cur_mag[j] * cosf(leftData.cur_phs[j]);
-//            cbuf[j].im = leftData.cur_mag[j] * sinf(leftData.cur_phs[j]);
-//        }
-//        
-//        // FFT back to time domain signal
-//        rfft((float*)cbuf, WINDOW_SIZE/2, FFT_INVERSE);
-//        
-//# pragma mark - Output
-//        // Write to output
-//        for (j = 0; j < HOP_SIZE; j++) {
-//            leftData.outData[i+j] = leftData.pre_win[j + HOP_SIZE] + leftData.cur_win[j];
-//        }
-//        
-//        // Filter data if filter button is on
-//        if (parameters.filter) processFilters(leftData.outData, HOP_SIZE);
-//        
-//        // Move previous window
-//        for (j = 0; j < WINDOW_SIZE; j++) {
-//            leftData.pre_win[j] = (j < overlap_samples) ?
-//            leftData.pre_win[j + HOP_SIZE] : 0;
-//        }
-//        
-//        // Update previous window
-//        for (j = 0; j < WINDOW_SIZE; j++) {
-//            leftData.pre_win[j] += leftData.cur_win[j];
-//        }
-//        
-//        // Combine input data with output data
-//        for (j = 0; j < HOP_SIZE; j++)
-//        {
-//            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + leftData.outData[i+j] * parameters.mix;
-//        }
-//    }
-//    
-//    // Filter data if filter button is on
-//    // if (parameters.filter) processFilters(samples, numSamples);
-//}
-//
-//# pragma mark - Mono Channel Processing -
-//// Process Mono Data
-//inline void Shifter::processRightChannel(float* const samples, const int numSamples) noexcept
-//{
-//    // Assert that the samples are not null
-//    jassert (samples != nullptr);
-//    
-//    // Init vars
-//    long i, j, index;
-//    float tmp;
-//    
-//    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
-//    freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
-//    
-//    // Init our arrays upon start-up
-//    if (rightStatus == false)
-//    {
-//        setBuffers(rightData);
-//        rightStatus = true;
-//    }
-//
-//    // Process our samples
-//    for (i = 0; i < numSamples; i += HOP_SIZE)
-//    {
-//# pragma mark - Analysis
-//        // Set our incoming samples to the current stft window
-//        for (j = 0; j < WINDOW_SIZE; j++) rightData.cur_win[j] = samples[i+j];
-//            // Applies a hanning window to data
-//            apply_window(rightData.cur_win, rightData.win, WINDOW_SIZE);
-//            
-//            // Obtain minimum phase by shifting time domain data before taking FFT
-//            fftshift(rightData.cur_win, WINDOW_SIZE);
-//            
-//# pragma mark - FFT/Convert to Magnitudes + Phases
-//            // FFT real values (Convert to frequency domain)
-//            rfft(rightData.cur_win, WINDOW_SIZE/2, FFT_FORWARD);
-//            // Get real and imaginary #s of the FFT'd window
-//            complex *cbuf = (complex *)rightData.cur_win;
-//            
-//            // Get Magnitude and Phase (polar coordinates)
-//            for (j = 0; j < WINDOW_SIZE/2; j++) {
-//                rightData.cur_mag[j] = cmp_abs(cbuf[j]);
-//                rightData.cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
-//            }
-//        // Get frequencies of FFT'd signal (analysis stage)
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            // Get phase difference
-//            tmp = rightData.cur_phs[j] - rightData.phi[j];
-//            rightData.phi[j] = rightData.cur_phs[j];
-//            
-//            // Subtract expected phase difference
-//            tmp -= rightData.om[j];
-//            
-//            // Map to +/- Pi interval
-//            tmp = princarg(tmp);
-//            
-//            // get deviation from bin freq from the +/- pi interval
-//            tmp = osamp * tmp / (2. * M_PI);
-//            
-//            // compute the k-th partials' true frequency
-//            tmp = (float) j * freqPerBin + tmp * freqPerBin;
-//            
-//            // Store true frequency
-//            rightData.anaFreq[j] = tmp;
-//        }
-//        
-//# pragma mark - Processing
-//        // Zero our processing buffers
-//        memset(rightData.synMagn, 0, WINDOW_SIZE*sizeof(float));
-//        memset(rightData.synFreq, 0, WINDOW_SIZE*sizeof(float));
-//        // Set new frequencies according to our pitch value
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            index = j * parameters.pitch;
-//            if (index < WINDOW_SIZE/2) {
-//                rightData.synMagn[index] += rightData.cur_mag[j];
-//                rightData.synFreq[index] = rightData.anaFreq[j] * parameters.pitch;
-//            }
-//        }
-//        
-//# pragma mark - Synthesis
-//        // Write our new magnitudes and phases
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            // get magnitude and true frequency from synthesis arrays
-//            rightData.cur_mag[j] = rightData.synMagn[j];
-//            
-//            // subtract bin mid frequency
-//            tmp = rightData.synFreq[j] - (float)j * freqPerBin;
-//            
-//            // get bin deviation from freq deviation
-//            tmp /= freqPerBin;
-//            
-//            // Factor in overlap factor
-//            tmp = 2. * M_PI * tmp / (float)osamp;
-//            
-//            // add the overlap phase advance back in
-//            tmp += om[j];
-//            
-//            // accumulate delta phase to get bin phase
-//            rightData.sumPhase[j] += tmp;
-//            rightData.cur_phs[j] = rightData.sumPhase[j];
-//        }
-//        
-//        // Back to Cartesian coordinates
-//        for (j = 0; j < WINDOW_SIZE/2; j++) {
-//            cbuf[j].re = rightData.cur_mag[j] * cosf(rightData.cur_phs[j]);
-//            cbuf[j].im = rightData.cur_mag[j] * sinf(rightData.cur_phs[j]);
-//        }
-//        
-//        // FFT back to time domain signal
-//        rfft((float*)cbuf, WINDOW_SIZE/2, FFT_INVERSE);
-//        
-//# pragma mark - Output
-//        // Write to output
-//        for (j = 0; j < HOP_SIZE; j++) {
-//            rightData.outData[i+j] = rightData.pre_win[j + HOP_SIZE] + rightData.cur_win[j];
-//        }
-//        
-//        // Filter data if filter button is on
-//        if (parameters.filter) processFilters(rightData.outData, HOP_SIZE);
-//        
-//        // Move previous window
-//        for (j = 0; j < WINDOW_SIZE; j++) {
-//            rightData.pre_win[j] = (j < overlap_samples) ?
-//            rightData.pre_win[j + HOP_SIZE] : 0;
-//        }
-//        
-//        // Update previous window
-//        for (j = 0; j < WINDOW_SIZE; j++) {
-//            rightData.pre_win[j] += rightData.cur_win[j];
-//        }
-//        
-//        // Combine input data with output data
-//        for (j = 0; j < HOP_SIZE; j++)
-//        {
-//            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + rightData.outData[i+j] * parameters.mix;
-//        }
-//    }
-//    
-//    // Filter data if filter button is on
-//    // if (parameters.filter) processFilters(samples, numSamples);
-//}
-//
-//
 
 # pragma mark - Filter Processing
 

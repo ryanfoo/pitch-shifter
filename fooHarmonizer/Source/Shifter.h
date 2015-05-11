@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             2048               // 256 is good (powers of two...) 4096
+#define WINDOW_SIZE             512               // 256 is good (powers of two...) 4096
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -109,7 +109,7 @@ public:
     // Oversampling factor
     long osamp;
     
-    data *monoData, *leftData, *rightData;
+    data monoData, leftData, rightData;
     
 protected:
     
