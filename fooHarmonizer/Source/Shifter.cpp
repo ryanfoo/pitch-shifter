@@ -74,13 +74,11 @@ void Shifter::initArrays(data *dat)
     // Zero out previous window
     memset(dat->pre_win, 0, WINDOW_SIZE*sizeof(float));
     
-    // Set expected omega frequency values
-    for (int i = 0; i < WINDOW_SIZE/2; i++)
-        dat->om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
+    // Set expected omega frequency value
+    omega = 2. * M_PI * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
 
     // Scale window for overlap add
-    for (int i = 0; i < WINDOW_SIZE; i++)
-        dat->win[i] *= 2. / osamp;
+    for (int i = 0; i < WINDOW_SIZE; i++) dat->win[i] *= 2. / osamp;
         
     setBuffers(dat);
     dat->status = false;
@@ -171,7 +169,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             myData->phi[j] = myData->cur_phs[j];
             
             // Subtract expected phase difference
-            tmp -= myData->om[j];
+            tmp -= j*omega;
             
             // Map to +/- Pi interval
             tmp = princarg(tmp);
@@ -191,6 +189,9 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
         memset(myData->synMagn, 0, WINDOW_SIZE*sizeof(float));
         memset(myData->synFreq, 0, WINDOW_SIZE*sizeof(float));
         // Set new frequencies according to our pitch value
+        // Filter-bank implementation
+        // - Represents Frequencies as a sum on sinusoids
+        // - Sinuosoids are modulated in amplitude/frequency
         for (j = 0; j < WINDOW_SIZE/2; j++)
         {
             // Get phase index to pitch shift our FFT data
@@ -222,7 +223,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             tmp = 2. * M_PI * tmp / (float)osamp;
             
             // add the overlap phase advance back in
-            tmp += myData->om[j];
+            tmp += j*omega;
             
             // accumulate delta phase to get bin phase
             myData->sumPhase[j] += tmp;

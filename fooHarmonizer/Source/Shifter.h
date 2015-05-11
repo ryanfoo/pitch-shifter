@@ -30,7 +30,6 @@ public:
         float win[WINDOW_SIZE];
         float cur_win[WINDOW_SIZE];
         float pre_win[WINDOW_SIZE];
-        float om[WINDOW_SIZE/2];
         float phi[WINDOW_SIZE/2];
         float cur_phs[WINDOW_SIZE/2];
         float cur_mag[WINDOW_SIZE/2];
@@ -102,7 +101,7 @@ public:
     void processFilters(float* const samples, const int numSamples);
     
     // Variables for processing FFT windows
-    float magn, freqPerBin, expct, overlap, overlap_samples;
+    float magn, freqPerBin, expct, overlap, overlap_samples, omega;
     
     // Oversampling factor
     long osamp;
