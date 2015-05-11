@@ -66,22 +66,21 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     
-    // Variables
+    // Pitch Variables
     float mixVal = 0.5f;
     float pitchVal = 1.0f;
     float lpVal = 100.0f;
     float hpVal = 5000.0f;
     int order = 0;
     int filter = 1;
-    // GUI Update
+    // Pitch Shifter GUI Update Functions
     void updateShifter(void);
     void updateLPFilter(void);
     void updateHPFilter(void);
 
 private:
-    // Audio Filters/Components
+    // Audio Components
     Shifter shifter;
-    // IIRFilter lpassFilterL, lpassFilterR, hpassFilterL, hpassFilterR;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FooHarmonizerAudioProcessor)

@@ -69,8 +69,8 @@ void Shifter::initArrays(data *dat)
     // Set Overlap Samples - how much overlap there will be between frames
     overlap_samples = overlap * WINDOW_SIZE;
     
-    // Apply blackman window to our main window
-    blackman(dat->win, WINDOW_SIZE);
+    // Apply hanning window to our main window (less overlap)
+    hanning(dat->win, WINDOW_SIZE);
     // Zero out previous window
     memset(dat->pre_win, 0, WINDOW_SIZE*sizeof(float));
     
@@ -79,11 +79,13 @@ void Shifter::initArrays(data *dat)
 
     // Scale window for overlap add
     for (int i = 0; i < WINDOW_SIZE; i++) dat->win[i] *= 2. / osamp;
-        
+    
+    // Reset phase buffers
     setBuffers(dat);
     dat->status = false;
 }
 
+// Reset phase buffers
 void Shifter::setBuffers(data *dat)
 {
     // Zero out buffers
@@ -172,7 +174,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             tmp -= j*omega;
             
             // Map to +/- Pi interval
-            tmp = princarg(tmp);
+            tmp = fmod(tmp + M_PI, -2 * M_PI) + M_PI;
             
             // get deviation from bin freq from the +/- pi interval
             tmp = osamp * tmp / (2. * M_PI);

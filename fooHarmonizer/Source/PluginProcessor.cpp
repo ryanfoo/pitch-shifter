@@ -15,10 +15,7 @@
 //==============================================================================
 FooHarmonizerAudioProcessor::FooHarmonizerAudioProcessor()
 {
-//    shifter.monoData = new Shifter::data();
-//    shifter.leftData = new Shifter::data();
-//    shifter.rightData = new Shifter::data();
-    
+    // Init our channel data upon startup
     shifter.initArrays(&shifter.monoData);
     shifter.initArrays(&shifter.leftData);
     shifter.initArrays(&shifter.rightData);
@@ -184,20 +181,15 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
     {
         // Obtain channel 1 data
         float *monoChannel = buffer.getWritePointer(0);
-        
-        // Pitch Shifting processing
-//        shifter.processChannel(monoChannel, buffer.getNumSamples());
+        // Process mono data
         shifter.processMono(monoChannel, buffer.getNumSamples());
     }
     else if (getNumInputChannels() == 2)
     {
         // Obtain channel 1 and 2 data
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
-        
-        // Pitch Shifting processing
+        // Process stereo data
         shifter.processStereo(leftChannel, rightChannel, buffer.getNumSamples());
-//        shifter.processMono(leftChannel, buffer.getNumSamples());
-//        shifter.processMono(rightChannel, buffer.getNumSamples());
     }
 }
 

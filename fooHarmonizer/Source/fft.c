@@ -24,7 +24,7 @@ void hanning( float * window, unsigned long length )
    double pi, phase = 0, delta;
 
    pi = 4.*atan(1.0);
-   delta = 2 * pi / (double) length;
+   delta = 2 * M_PI / (double) length;
 
    for( i = 0; i < length; i++ )
    {
@@ -46,7 +46,7 @@ void hamming( float * window, unsigned long length )
     double pi, phase = 0, delta;
 
     pi = 4.*atan(1.0);
-    delta = 2 * pi / (double) length;
+    delta = 2 * M_PI / (double) length;
 
     for( i = 0; i < length; i++ )
     {
@@ -67,7 +67,7 @@ void blackman( float * window, unsigned long length )
     double pi, phase = 0, delta;
 
     pi = 4.*atan(1.0);
-    delta = 2 * pi / (double) length;
+    delta = 2 * M_PI / (double) length;
 
     for( i = 0; i < length; i++ )
     {
@@ -91,8 +91,6 @@ void apply_window( float * data, float * window, unsigned long length )
        data[i] *= window[i];
 }
 
-static float PI ;
-static float TWOPI ;
 void bit_reverse( float * x, long N );
 
 
@@ -115,19 +113,11 @@ void bit_reverse( float * x, long N );
 //-----------------------------------------------------------------------------
 void rfft( float * x, long N, unsigned int forward )
 {
-    static int first = 1 ;
     float c1, c2, h1r, h1i, h2r, h2i, wr, wi, wpr, wpi, temp, theta ;
     float xr, xi ;
     long i, i1, i2, i3, i4, N2p1 ;
 
-    if( first )
-    {
-        PI = (float) (4.*atan( 1. )) ;
-        TWOPI = (float) (8.*atan( 1. )) ;
-        first = 0 ;
-    }
-
-    theta = PI/N ;
+    theta = M_PI/N ;
     wr = 1. ;
     wi = 0. ;
     c1 = 0.5 ;
@@ -220,7 +210,7 @@ void cfft( float * x, long NC, unsigned int forward )
     for( mmax = 2 ; mmax < ND ; mmax = delta )
     {
         delta = mmax<<1 ;
-        theta = TWOPI/( forward? mmax : -mmax ) ;
+        theta = 2*M_PI/( forward? mmax : -mmax ) ;
         wpr = (float) (-2.*pow( sin( 0.5*theta ), 2. )) ;
         wpi = (float) sin( theta ) ;
         wr = 1. ;
