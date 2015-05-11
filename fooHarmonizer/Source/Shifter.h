@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             4096               // 256 is good (powers of two...) 4096
+#define WINDOW_SIZE             2048               // 256 is good (powers of two...) 4096
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -40,6 +40,7 @@ public:
         float anaMagn[WINDOW_SIZE];
         float synFreq[WINDOW_SIZE];
         float synMagn[WINDOW_SIZE];
+        bool status;
     } data;
     
     // Struct holds pitch shifter's parameters
@@ -78,14 +79,14 @@ public:
     void prepareToPlay();
     
     // Init arrays
-    void initArrays();
-    void setBuffers();
+    void initArrays(data *dat);
+    void setBuffers(data *dat);
     
     void processMono(float* const samples, const int numSamples);
     void processStereo(float* const left, float* const right, const int numSamples);
     
     // Process Mono
-    void processChannel(float* const samples, const int numSamples) noexcept;
+    void processChannel(float* const samples, const int numSamples, data *myData) noexcept;
     
     // Process Left Channel
     void processLeftChannel(float* const samples, const int numSamples) noexcept;
@@ -102,19 +103,13 @@ public:
     // Process Filters
     void processFilters(float* const samples, const int numSamples);
     
-    // Arrays to process FFT, Magnitude, Phase
-    float cur_win[WINDOW_SIZE], pre_win[WINDOW_SIZE], om[WINDOW_SIZE/2], phi[WINDOW_SIZE/2], win[WINDOW_SIZE], cur_phs[WINDOW_SIZE/2], cur_mag[WINDOW_SIZE/2], sumPhase[WINDOW_SIZE/2], outData[WINDOW_SIZE*2], anaFreq[WINDOW_SIZE], anaMagn[WINDOW_SIZE], synFreq[WINDOW_SIZE], synMagn[WINDOW_SIZE];
-    
     // Variables for processing FFT windows
     float magn, freqPerBin, expct, overlap, overlap_samples;
     
     // Oversampling factor
     long osamp;
     
-    // For initializing arrays upon start up
-    bool monoStatus = false, stereoStatus = false;
-    
-    data monoData, leftData, rightData;
+    data *monoData, *leftData, *rightData;
     
 protected:
     

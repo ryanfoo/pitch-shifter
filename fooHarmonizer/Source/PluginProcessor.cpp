@@ -15,7 +15,13 @@
 //==============================================================================
 FooHarmonizerAudioProcessor::FooHarmonizerAudioProcessor()
 {
-    shifter.initArrays();
+    shifter.monoData = new Shifter::data();
+    shifter.leftData = new Shifter::data();
+    shifter.rightData = new Shifter::data();
+    
+    shifter.initArrays(shifter.monoData);
+    shifter.initArrays(shifter.leftData);
+    shifter.initArrays(shifter.rightData);
 }
 
 FooHarmonizerAudioProcessor::~FooHarmonizerAudioProcessor()
@@ -141,9 +147,6 @@ void FooHarmonizerAudioProcessor::updateShifter(void)
     // Actually set them in parameters struct
     shifter.setParameters(shifterParams);
     
-    shifter.monoStatus = false;
-    shifter.stereoStatus = false;
-    
     // If filter is on, update the filter values
     if (shifterParams.filter)
     {
@@ -192,9 +195,9 @@ void FooHarmonizerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiB
         float *leftChannel = buffer.getWritePointer(0), *rightChannel = buffer.getWritePointer(1);
         
         // Pitch Shifting processing
-//        shifter.processLeftChannel(leftChannel, buffer.getNumSamples());
-//        shifter.processRightChannel(rightChannel, buffer.getNumSamples());
         shifter.processStereo(leftChannel, rightChannel, buffer.getNumSamples());
+//        shifter.processMono(leftChannel, buffer.getNumSamples());
+//        shifter.processMono(rightChannel, buffer.getNumSamples());
     }
 }
 
