@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             512               // 256 is good (powers of two...) 4096
+#define WINDOW_SIZE             1024               
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -80,19 +80,17 @@ public:
     
     // Init arrays
     void initArrays(data *dat);
+    // Reset buffers every time we change
     void setBuffers(data *dat);
     
+    // Process Mono Channel
     void processMono(float* const samples, const int numSamples);
+    
+    // Process Stereo Channel
     void processStereo(float* const left, float* const right, const int numSamples);
     
-    // Process Mono
+    // Process Channel of Data
     void processChannel(float* const samples, const int numSamples, data *myData) noexcept;
-    
-    // Process Left Channel
-    void processLeftChannel(float* const samples, const int numSamples) noexcept;
-    
-    // Process Right Channel
-    void processRightChannel(float* const samples, const int numSamples) noexcept;
     
     // Update Lowpass Filter's Parameters
     void updateLPFilter(void);
@@ -109,6 +107,7 @@ public:
     // Oversampling factor
     long osamp;
     
+    // Our separate data channels
     data monoData, leftData, rightData;
     
 protected:

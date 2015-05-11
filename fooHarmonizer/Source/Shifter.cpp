@@ -76,14 +76,11 @@ void Shifter::initArrays(data *dat)
     
     // Set expected omega frequency values
     for (int i = 0; i < WINDOW_SIZE/2; i++)
-    {
         dat->om[i] = 2. * M_PI * i * osamp * (float)HOP_SIZE / (float)WINDOW_SIZE;
-    }
+
     // Scale window for overlap add
     for (int i = 0; i < WINDOW_SIZE; i++)
-    {
         dat->win[i] *= 2. / osamp;
-    }
         
     setBuffers(dat);
     dat->status = false;
@@ -96,13 +93,15 @@ void Shifter::setBuffers(data *dat)
     memset(dat->sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
 }
 
-# pragma mark - Mono Channel Processing -
+# pragma mark - Pitch Shifting Algorithm -
+
+# pragma mark - Mono Channel Processing
 void Shifter::processMono(float* const samples, const int numSamples)
 {
     processChannel(samples, numSamples, &monoData);
 }
 
-# pragma mark - Stereo Channel Processing -
+# pragma mark - Stereo Channel Processing
 
 void Shifter::processStereo(float* const left, float* const right, const int numSamples)
 {
@@ -130,13 +129,22 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
         myData->status = true;
     }
     
-    // Process our samples
+    // Return filtered data if parameters.pitch is just 1.0
+    if (parameters.pitch == 1.0f)
+    {
+        if (parameters.filter) processFilters(samples, numSamples);
+        return;
+    }
+    
+    // Process our samples; Increment frames by "hop size", or frame widths.
+    // This is our overlap add implementation where we take our data frame by frame
+    // and then add it back together in the end.
     for (i = 0; i < numSamples; i += HOP_SIZE)
     {
 # pragma mark - Analysis
         // Set our incoming samples to the current stft window
         for (j = 0; j < WINDOW_SIZE; j++) myData->cur_win[j] = samples[i+j];
-        // Applies a hanning window to data
+        // Applies windowing to data
         apply_window(myData->cur_win, myData->win, WINDOW_SIZE);
         
         // Obtain minimum phase by shifting time domain data before taking FFT
@@ -149,12 +157,15 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
         complex *cbuf = (complex *)myData->cur_win;
         
         // Get Magnitude and Phase (polar coordinates)
-        for (j = 0; j < WINDOW_SIZE/2; j++) {
+        for (j = 0; j < WINDOW_SIZE/2; j++)
+        {
             myData->cur_mag[j] = cmp_abs(cbuf[j]);
             myData->cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
         }
+        
         // Get frequencies of FFT'd signal (analysis stage)
-        for (j = 0; j < WINDOW_SIZE/2; j++) {
+        for (j = 0; j < WINDOW_SIZE/2; j++)
+        {
             // Get phase difference
             tmp = myData->cur_phs[j] - myData->phi[j];
             myData->phi[j] = myData->cur_phs[j];
@@ -180,11 +191,18 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
         memset(myData->synMagn, 0, WINDOW_SIZE*sizeof(float));
         memset(myData->synFreq, 0, WINDOW_SIZE*sizeof(float));
         // Set new frequencies according to our pitch value
-        for (j = 0; j < WINDOW_SIZE/2; j++) {
+        for (j = 0; j < WINDOW_SIZE/2; j++)
+        {
+            // Get phase index to pitch shift our FFT data
             index = j * parameters.pitch;
-            if (index < WINDOW_SIZE/2) {
+            
+            // if the phase index is within our FFT data range, we
+            // overlap our current magnitude and set our analysis
+            // frequency
+            if (index < WINDOW_SIZE/2)
+            {
                 myData->synMagn[index] += myData->cur_mag[j];
-                myData->synFreq[index] = myData->anaFreq[j];// * parameters.pitch;
+                myData->synFreq[index] = myData->anaFreq[j];
             }
         }
         
@@ -222,30 +240,20 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
  
 # pragma mark - Output
         // Write to output
-        for (j = 0; j < HOP_SIZE; j++) {
-            myData->outData[i+j] = myData->pre_win[j + HOP_SIZE] + myData->cur_win[j];
-        }
-        
-        // Filter data if filter button is on
-        if (parameters.filter) processFilters(myData->outData, HOP_SIZE);
-        
+        for (j = 0; j < HOP_SIZE; j++) myData->outData[i+j] = myData->pre_win[j + HOP_SIZE] + myData->cur_win[j];
+    
         // Move previous window
-        for (j = 0; j < WINDOW_SIZE; j++) {
-            myData->pre_win[j] = (j < overlap_samples) ?
-            myData->pre_win[j + HOP_SIZE] : 0;
-        }
+        for (j = 0; j < WINDOW_SIZE; j++) myData->pre_win[j] = (j < overlap_samples) ? myData->pre_win[j + HOP_SIZE] : 0;
         
         // Update previous window
-        for (j = 0; j < WINDOW_SIZE; j++) {
-            myData->pre_win[j] += myData->cur_win[j];
-        }
-        
-        // Combine input data with output data
-        for (j = 0; j < HOP_SIZE; j++)
-        {
-            samples[i+j] = samples[i+j] * (1.0 - parameters.mix) + myData->outData[i+j] * parameters.mix;
-        }
+        for (j = 0; j < WINDOW_SIZE; j++) myData->pre_win[j] += myData->cur_win[j];
     }
+    
+    // Filter data if filter button is on
+    if (parameters.filter) processFilters(myData->outData, numSamples);
+        
+    // Combine input data with output data
+    for (i = 0; i < numSamples; i++) samples[i] = samples[i] * (1.0 - parameters.mix) + myData->outData[i] * parameters.mix;
 }
 
 # pragma mark - Filter Processing
