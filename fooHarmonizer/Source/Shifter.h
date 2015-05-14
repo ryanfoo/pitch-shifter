@@ -14,7 +14,7 @@
 #include "fft.h"
 
 #define INIT_SAMPLE_RATE        44100
-#define WINDOW_SIZE             1024               
+#define WINDOW_SIZE             4096
 #define HOP_SIZE                (WINDOW_SIZE/4)
 
 class Shifter
@@ -33,7 +33,7 @@ public:
         float cur_win[WINDOW_SIZE];             // Window containing our current data samples
         float pre_win[WINDOW_SIZE];             // Window containing previous frame's data
         // Previous Phase data
-        float phi[WINDOW_SIZE/2];               // Previous phase array
+        float prev_phs[WINDOW_SIZE/2];               // Previous phase array
         // FFT Data (Phase and Mag data we obtain)
         float cur_phs[WINDOW_SIZE/2];           // Current phase array
         float cur_mag[WINDOW_SIZE/2];           // Current magnitude array

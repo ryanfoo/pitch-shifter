@@ -4,7 +4,7 @@
 //
 //  Created by Ryan Foo on 4/10/15.
 //
-// Phase Vocoding Method is implemented in the fooHarmonizer
+// Phase vocoding implementation via filter-bank approach
 // Information obtained from DAFX book ch. 7
 // Pitch Shifting Process:
 //      1. Input Signal (Time Domain)
@@ -89,7 +89,7 @@ void Shifter::initArrays(data *dat)
 void Shifter::setBuffers(data *dat)
 {
     // Zero out buffers
-    memset(dat->phi, 0, WINDOW_SIZE/2*sizeof(float));
+    memset(dat->prev_phs, 0, WINDOW_SIZE/2*sizeof(float));
     memset(dat->sumPhase, 0, WINDOW_SIZE/2*sizeof(float));
 }
 
@@ -119,7 +119,7 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
     long i, j, index;
     float tmp;
     
-    // Set Frequencies Per Bin - # of frequencies in each bin to be analyzed = SR/WINDOW_SIZE
+    // Set Frequencies Per Bin - frequency width per bin = SR/WINDOW_SIZE (bandwidth per bin for each window size)
     freqPerBin  = currentSampleRate/(float)WINDOW_SIZE;
     
     // Init our arrays upon start-up
@@ -162,31 +162,32 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             myData->cur_mag[j] = cmp_abs(cbuf[j]);
             myData->cur_phs[j] = atan2f(cbuf[j].im, cbuf[j].re);
         }
-        
+
+# pragma mark - Time-Frequency Processing
         // Get frequencies of FFT'd signal (analysis stage)
         for (j = 0; j < WINDOW_SIZE/2; j++)
         {
-            // Get phase difference
-            tmp = myData->cur_phs[j] - myData->phi[j];
-            myData->phi[j] = myData->cur_phs[j];
+            // Get phase shift (true frequency w/ unwrapped phase shift)
+            tmp = myData->cur_phs[j] - myData->prev_phs[j];
+            // Set prev_phase to cur_phase
+            myData->prev_phs[j] = myData->cur_phs[j];
             
-            // Subtract expected phase difference
+            // Get Frequency Deviation (convert to radians)
             tmp -= j*omega;
             
-            // Map to +/- Pi interval
+            // Wrap Frequency Deviation to +/- Pi interval
             tmp = fmod(tmp + M_PI, -2 * M_PI) + M_PI;
             
-            // get deviation from bin freq from the +/- pi interval
+            // Get deviation from bin freq from the +/- pi interval (convert from radians)
             tmp = osamp * tmp / (2. * M_PI);
             
-            // compute the k-th partials' true frequency
+            // Compute true frequency (new phase of freq bin j) by adding phase shift
             tmp = (long)j * freqPerBin + tmp * freqPerBin;
             
             // Store true frequency
             myData->anaFreq[j] = tmp;
         }
         
-# pragma mark - Processing
         // Zero our processing buffers
         memset(myData->synMagn, 0, WINDOW_SIZE*sizeof(float));
         memset(myData->synFreq, 0, WINDOW_SIZE*sizeof(float));
@@ -215,19 +216,19 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             // get magnitude and true frequency from synthesis arrays
             myData->cur_mag[j] = myData->synMagn[j];
             
-            // subtract bin mid frequency
+            // Subtract mid frequency bin (get actual pitch-shifted frequency from position j bin)
             tmp = myData->synFreq[j] - (float)j * freqPerBin;
             
-            // get bin deviation from freq deviation
+            // Get bin deviation from frequency deviation (get actual pitch shifted frequency from frequency bandwidth)
             tmp /= freqPerBin;
             
             // Factor in overlap factor
             tmp = 2. * M_PI * tmp / (float)osamp;
             
-            // add the overlap phase advance back in
+            // Add the overlap phase back in (convert to radians)
             tmp += j*omega;
             
-            // accumulate delta phase to get bin phase
+            // Accumulate delta phase to get bin phase
             myData->sumPhase[j] += tmp;
             myData->cur_phs[j] = myData->sumPhase[j];
         }
@@ -238,17 +239,17 @@ inline void Shifter::processChannel(float* const samples, const int numSamples, 
             cbuf[j].im = myData->cur_mag[j] * sinf(myData->cur_phs[j]);
         }
         
-        // FFT back to time domain signal
+        // IFFT back to time domain signal
         rfft((float*)cbuf, WINDOW_SIZE/2, FFT_INVERSE);
  
 # pragma mark - Output
-        // Write to output
+        // Write to output (of hop size frame)
         for (j = 0; j < HOP_SIZE; j++) myData->outData[i+j] = myData->pre_win[j + HOP_SIZE] + myData->cur_win[j];
     
-        // Move previous window
+        // Move previous window (move previous hop-size frame to previous 256 frames)
         for (j = 0; j < WINDOW_SIZE; j++) myData->pre_win[j] = (j < overlap_samples) ? myData->pre_win[j + HOP_SIZE] : 0;
         
-        // Update previous window
+        // Update previous window (add current window to current previous win)
         for (j = 0; j < WINDOW_SIZE; j++) myData->pre_win[j] += myData->cur_win[j];
     }
     
